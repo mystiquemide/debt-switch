@@ -4,5 +4,17 @@
       "name": "v1.9.7",
       "rev": "77041d2ce690e692d6e03cc812b57d1ddaa4d505"
     }
+  },
+  "lib/morpho-blue": {
+    "tag": {
+      "name": "v1.0.0",
+      "rev": "55d2d99304fb3fb930c688462ae2ccabb1d533ad"
+    }
+  },
+  "lib/morpho-blue-irm": {
+    "tag": {
+      "name": "v1.0.0",
+      "rev": "a7d9cce3451b4a106bfd40933ac57a785b5228f3"
+    }
   }
 }

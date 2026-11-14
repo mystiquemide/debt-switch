@@ -1,0 +1,12 @@
+[profile.default]
+src = "contracts"
+test = "test"
+script = "script"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.24"
+# Mezo block headers lack blob gas fields, so forks fail on Cancun and later.
+evm_version = "shanghai"
+
+[rpc_endpoints]
+mezo_testnet = "https://rpc.test.mezo.org"

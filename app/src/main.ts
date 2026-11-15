@@ -118,6 +118,7 @@ function decodeError(e: unknown): string {
 async function connect() {
   if (!window.ethereum) return;
   readOnly = false;
+  localStorage.removeItem(DISCONNECTED_KEY);
   if (location.search) history.replaceState(null, "", location.pathname);
   try {
     wallet = createWalletClient({ chain: mezoTestnet, transport: custom(window.ethereum) });
@@ -128,6 +129,21 @@ async function connect() {
     phase = isRejection(e) || (e as { code?: number })?.code === 4001 ? { kind: "rejected" } : { kind: "read-error", message: decodeError(e) };
     render();
   }
+}
+
+const DISCONNECTED_KEY = "ds-disconnected";
+
+async function disconnect() {
+  // Ask the wallet to drop this site's permission where it supports it, and remember the choice either way.
+  await window.ethereum?.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] }).catch(() => {});
+  localStorage.setItem(DISCONNECTED_KEY, "1");
+  wallet = undefined;
+  account = undefined;
+  walletAddr = undefined;
+  snap = undefined;
+  preview = undefined;
+  phase = window.ethereum ? { kind: "disconnected" } : { kind: "no-wallet" };
+  render();
 }
 
 async function checkNetworkAndRead() {
@@ -178,13 +194,18 @@ async function addOrSwitchChain() {
 
 async function refresh() {
   if (!account) return;
+  const reading = account;
   phase = { kind: "reading" };
   render();
   try {
-    snap = await readSnapshot(account);
-    preview = snap.morpho.borrowShares > 0n ? await buildPreview(snap) : undefined;
+    const s = await readSnapshot(reading);
+    const p = s.morpho.borrowShares > 0n ? await buildPreview(s) : undefined;
+    if (account !== reading) return; // disconnected or switched wallets while reading
+    snap = s;
+    preview = p;
     phase = { kind: "ready" };
   } catch (e) {
+    if (account !== reading) return;
     phase = { kind: "read-error", message: decodeError(e) };
   }
   render();
@@ -600,11 +621,14 @@ function renderNavState() {
   if (mine) {
     html = readOnly
       ? `<a class="btn btn-secondary nav-addr" href="/app/" title="Back to your own loan">${short(mine)}</a>`
-      : `<a class="btn btn-secondary nav-addr" href="${addrUrl(mine)}" ${ext} title="Connected on Mezo Testnet">${short(mine)}</a>`;
+      : `<a class="btn btn-secondary nav-addr" href="${addrUrl(mine)}" ${ext} title="Connected on Mezo Testnet">${short(mine)}</a>
+        <button class="btn btn-secondary nav-disconnect" type="button" data-disconnect aria-label="Disconnect wallet"><span class="nav-disconnect-label">Disconnect</span><svg class="nav-disconnect-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg></button>`;
   } else if (window.ethereum) {
     html = `<button class="btn btn-primary" type="button" data-connect>Connect wallet</button>`;
   }
-  nav.setWallet(html).querySelector("[data-connect]")?.addEventListener("click", connect);
+  const slot = nav.setWallet(html);
+  slot.querySelector("[data-connect]")?.addEventListener("click", connect);
+  slot.querySelector("[data-disconnect]")?.addEventListener("click", disconnect);
 }
 
 function render() {
@@ -626,6 +650,7 @@ function render() {
 
 
 window.ethereum?.on?.("accountsChanged", (accs: Address[]) => {
+  if (localStorage.getItem(DISCONNECTED_KEY)) return;
   walletAddr = accs[0];
   if (readOnly) return render();
   account = accs[0];
@@ -637,7 +662,7 @@ window.ethereum?.on?.("accountsChanged", (accs: Address[]) => {
   }
 });
 window.ethereum?.on?.("chainChanged", () => {
-  if (!readOnly) checkNetworkAndRead();
+  if (!readOnly && account) checkNetworkAndRead();
 });
 
 async function start() {
@@ -646,7 +671,7 @@ async function start() {
   const existing = window.ethereum
     ? ((await window.ethereum.request({ method: "eth_accounts" }).catch(() => [])) as Address[])
     : [];
-  walletAddr = existing[0];
+  walletAddr = localStorage.getItem(DISCONNECTED_KEY) ? undefined : existing[0];
   if (viewAddress && isAddress(viewAddress)) {
     readOnly = true;
     account = getAddress(viewAddress);

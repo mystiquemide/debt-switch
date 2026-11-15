@@ -132,6 +132,7 @@
 .nav-wallet {
   margin-left: auto;
   display: flex;
+  gap: 8px;
 }
 .nav-wallet:empty {
   display: none;
@@ -143,5 +144,36 @@
   .nav-wallet .btn {
     padding: 0 16px;
     font-size: 14px;
+  }
+}
+
+.nav-disconnect-icon {
+  display: none;
+}
+@media (max-width: 520px) {
+  .nav-wallet .nav-disconnect {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .nav-disconnect-label {
+    display: none;
+  }
+  .nav-disconnect-icon {
+    display: block;
+  }
+}
+@media (max-width: 420px) {
+  .nav-wallet {
+    gap: 6px;
+  }
+  .nav-wallet .nav-addr {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 420px) {
+  .nav:has(.nav-addr) .nav-mark-text {
+    display: none;
   }
 }

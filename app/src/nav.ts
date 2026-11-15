@@ -49,7 +49,7 @@ export function renderAppNav(target: HTMLElement, opts: { demoHref: string; expl
   target.innerHTML = `
     <div class="nav-wrap">
       <nav class="nav" aria-label="App">
-        <a class="nav-mark" href="/"><img src="/logo.svg" alt="" width="34" height="34" />Debt Switch</a>
+        <a class="nav-mark" href="/" aria-label="Debt Switch home"><img src="/logo.svg" alt="" width="34" height="34" /><span class="nav-mark-text">Debt Switch</span></a>
         <ul class="nav-links">
           <li><a href="/app/" data-nav="switch">Switch</a></li>
           <li><a href="${opts.demoHref}" data-nav="demo">Demo loan</a></li>

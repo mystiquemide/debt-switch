@@ -207,7 +207,7 @@ The token transfers of [the switch transaction](https://explorer.test.mezo.org/t
 8. **300.000133 mUSDC, router to Morpho.** The flash loan repaid.
 9. **1,139.246954 mUSDC, router to the borrower.** The refund. The router is left with nothing.
 
-### 5. Wrong network guard
+### 6. Wrong network guard
 
 ![Debt Switch app asking the wallet to switch to Mezo Testnet, chain 31611](docs/screenshots/4-wrong-network.jpg)
 

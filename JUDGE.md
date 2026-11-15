@@ -60,6 +60,10 @@ cast call 0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503 "balanceOf(address)(uint256
 cast call 0xe1a26db653708A2AD8F824E92Db9852410e33A59 "balanceOf(address)(uint256)" 0x7bb308048C4C511A4102640eDCD8027c22123af7 --rpc-url https://rpc.test.mezo.org
 ```
 
+### Or switch your own loan
+
+Get about 0.05 testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org), connect a wallet on Mezo Testnet at **https://debtswitch.midelabs.xyz/app/** and press **Open a test loan**. It approves your BTC, adds 0.04 BTC as Morpho collateral and borrows 100 mUSDC, up to three confirmations. The app then shows the switch preview. Press **Switch to fixed rate** and check the result the same way as step 1.
+
 ## 3. The refusals (1 minute)
 
 | Case | Transaction | Expected |

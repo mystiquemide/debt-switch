@@ -57,7 +57,13 @@ export const morphoAbi = parseAbi([
   "function market(bytes32 id) view returns (uint128 totalSupplyAssets, uint128 totalSupplyShares, uint128 totalBorrowAssets, uint128 totalBorrowShares, uint128 lastUpdate, uint128 fee)",
   "function isAuthorized(address authorizer, address authorized) view returns (bool)",
   "function setAuthorization(address authorized, bool newIsAuthorized)",
+  "struct MarketParams { address loanToken; address collateralToken; address oracle; address irm; uint256 lltv; }",
+  "function supplyCollateral(MarketParams marketParams, uint256 assets, address onBehalf, bytes data)",
+  "function borrow(MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) returns (uint256, uint256)",
 ]);
+
+/** The test loan judges can open in one click: the same shape as the demo loan, sized to leave room for others. */
+export const TEST_LOAN = { collateral: 4n * 10n ** 16n, borrow: 100n * 10n ** 6n } as const;
 
 export const routerAbi = parseAbi([
   "struct MarketParams { address loanToken; address collateralToken; address oracle; address irm; uint256 lltv; }",
@@ -75,7 +81,11 @@ export const routerAbi = parseAbi([
   "error InsufficientOutputAmount()",
 ]);
 
-export const erc20Abi = parseAbi(["function balanceOf(address) view returns (uint256)"]);
+export const erc20Abi = parseAbi([
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+]);
 
 const borrowerOpsAbi = parseAbi([
   "function minNetDebt() view returns (uint256)",

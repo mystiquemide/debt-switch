@@ -7,7 +7,7 @@
 [![Live app](https://img.shields.io/badge/live%20app-debtswitch.midelabs.xyz-f7931a)](https://debtswitch.midelabs.xyz)
 [![Network](https://img.shields.io/badge/Mezo%20Testnet-31611-1f2937)](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7)
 [![Track](https://img.shields.io/badge/Mezo%20Buildathon-Track%201%3A%20DeFi-7c3aed)](#tracks)
-[![Tests](https://img.shields.io/badge/forge%20test-15%20passing-3ccf8e)](test)
+[![CI](https://github.com/mystiquemide/debt-switch/actions/workflows/ci.yml/badge.svg)](https://github.com/mystiquemide/debt-switch/actions/workflows/ci.yml)
 [![Contracts](https://img.shields.io/badge/contracts-source%20verified-3ccf8e)](#contracts)
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 
@@ -82,6 +82,7 @@ The full walkthrough with expected results is in **[JUDGE.md](JUDGE.md)**. The s
 2. Open **[the demo borrower in the app](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)**. No wallet needed. It reads that wallet's Morpho position and trove live from chain and explains the switch. With your own wallet on Mezo Testnet, [the app](https://debtswitch.midelabs.xyz) reads your positions the same way.
 3. Check the refusals on chain: a [below-floor attempt](https://explorer.test.mezo.org/tx/0xaf9e00b1c6f240869b02960e8a8bb5314a41b35a3aeab391331c7091a7f1e027) and a [wrong-caller attempt](https://explorer.test.mezo.org/tx/0xc3d1628ca463dd13b0e4d293d32fc449d519897ac50ac14b7a0e2a68a88b45c8), both reverted.
 4. Read the [verified router source](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract), the deployed version with the Morpho-to-MUSD direction.
+5. Switch a loan yourself. Get about 0.05 testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org), connect in [the app](https://debtswitch.midelabs.xyz/app/) and press **Open a test loan**. It borrows 100 mUSDC on Morpho against 0.04 BTC, then the app offers the switch.
 
 ## Tracks
 

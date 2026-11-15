@@ -20,7 +20,9 @@ import {
   MARKET,
   OPEN_TROVE_DOMAIN,
   OPEN_TROVE_TYPES,
+  TEST_LOAN,
   addrUrl,
+  erc20Abi,
   buildPreview,
   fmt,
   mezoTestnet,
@@ -48,7 +50,7 @@ type Phase =
   | { kind: "reading" }
   | { kind: "read-error"; message: string }
   | { kind: "ready" }
-  | { kind: "busy"; flow: "switch" | "revoke"; at: number; step: string; hash?: Hex }
+  | { kind: "busy"; flow: "switch" | "revoke" | "loan"; at: number; step: string; hash?: Hex }
   | { kind: "rejected" }
   | { kind: "reverted"; message: string; hash?: Hex }
   | { kind: "revoked"; hash: Hex }
@@ -69,7 +71,7 @@ let walletAddr: Address | undefined;
 const DEMO_BORROWER = "0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4" as Address;
 const DEMO_SWITCH_TX = "0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5" as Hex;
 const DEMO_HREF = `/app/?address=${DEMO_BORROWER}`;
-const TESTNET_DAPP = "https://testnet.mezo.org";
+const FAUCET = "https://faucet.test.mezo.org";
 const nav = renderAppNav(document.querySelector<HTMLDivElement>("#nav")!, {
   demoHref: `/app/?address=${DEMO_BORROWER}`,
   explorerHref: `https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7`,
@@ -306,6 +308,50 @@ async function revoke() {
   }
 }
 
+async function openTestLoan() {
+  if (!wallet || !account) return;
+  const market = MARKET;
+  try {
+    const allowance = await publicClient.readContract({
+      address: ADDR.btc, abi: erc20Abi, functionName: "allowance", args: [account, ADDR.morpho],
+    });
+    if (allowance < TEST_LOAN.collateral) {
+      phase = { kind: "busy", flow: "loan", at: 0, step: "Let Morpho use your test BTC: confirm in your wallet" };
+      render();
+      const h = await wallet.writeContract({
+        account, chain: mezoTestnet, address: ADDR.btc, abi: erc20Abi, functionName: "approve", args: [ADDR.morpho, TEST_LOAN.collateral],
+      });
+      phase = { kind: "busy", flow: "loan", at: 0, step: "Waiting for the approval to confirm", hash: h };
+      render();
+      if ((await publicClient.waitForTransactionReceipt({ hash: h })).status !== "success") throw new Error("DS:The approval didn't go through. Nothing changed.");
+    }
+    phase = { kind: "busy", flow: "loan", at: 1, step: "Add your BTC as collateral: confirm in your wallet" };
+    render();
+    const sup = await publicClient.simulateContract({
+      account, address: ADDR.morpho, abi: morphoAbi, functionName: "supplyCollateral", args: [market, TEST_LOAN.collateral, account, "0x"],
+    });
+    const h1 = await wallet.writeContract({ ...sup.request, account, chain: mezoTestnet });
+    phase = { kind: "busy", flow: "loan", at: 1, step: "Waiting for the collateral to confirm", hash: h1 };
+    render();
+    if ((await publicClient.waitForTransactionReceipt({ hash: h1 })).status !== "success") throw new Error("DS:Adding collateral didn't go through. Your BTC is still in your wallet.");
+    phase = { kind: "busy", flow: "loan", at: 2, step: `Borrow ${fmt(TEST_LOAN.borrow, 6, 0)} mUSDC: confirm in your wallet` };
+    render();
+    const bor = await publicClient.simulateContract({
+      account, address: ADDR.morpho, abi: morphoAbi, functionName: "borrow", args: [market, TEST_LOAN.borrow, 0n, account, account],
+    });
+    const h2 = await wallet.writeContract({ ...bor.request, account, chain: mezoTestnet });
+    phase = { kind: "busy", flow: "loan", at: 2, step: "Waiting for the loan to confirm", hash: h2 };
+    render();
+    if ((await publicClient.waitForTransactionReceipt({ hash: h2 })).status !== "success")
+      throw new Error("DS:The loan didn't go through. Your BTC is on Morpho as collateral, and you can withdraw it there.");
+    await checkNetworkAndRead();
+  } catch (e) {
+    phase = isRejection(e) ? { kind: "rejected" } : { kind: "reverted", message: decodeError(e) };
+    if (account) snap = await readSnapshot(account).catch(() => snap);
+    render();
+  }
+}
+
 // ---------- rendering ----------
 
 function row(label: string, value: string) {
@@ -499,8 +545,16 @@ function body(): string {
     !hasMorpho && snap.trove.status !== 1
       ? stateCard({
           title: readOnly ? "This wallet has no loan on Mezo yet" : "You don't have a loan on Mezo yet",
-          body: "Debt Switch moves an existing Morpho loan into a fixed-rate MUSD loan. Open a loan on Mezo Testnet first, then come back to switch it.",
-          actions: `<a class="btn btn-primary" href="${TESTNET_DAPP}" ${ext}>Open a loan on Mezo</a>`,
+          body: readOnly
+            ? "Debt Switch moves an existing Morpho loan into a fixed-rate MUSD loan. This wallet has neither."
+            : snap.wallet.btc >= TEST_LOAN.collateral + 10n ** 15n
+              ? `Open a ${fmt(TEST_LOAN.borrow, 6, 0)} mUSDC variable-rate test loan on Morpho against ${fmt(TEST_LOAN.collateral, 18, 2)} BTC, then switch it here. It takes up to three wallet confirmations.`
+              : `To try a switch, open a small test loan against ${fmt(TEST_LOAN.collateral, 18, 2)} BTC. This wallet has ${fmt(snap.wallet.btc, 18, 4)} BTC. Get testnet BTC from the Mezo faucet, then come back.`,
+          actions: readOnly
+            ? `<a class="btn btn-primary" href="/app/">Use your own wallet</a>`
+            : snap.wallet.btc >= TEST_LOAN.collateral + 10n ** 15n
+              ? `<button class="btn btn-primary" id="test-loan" type="button">Open a test loan</button>`
+              : `<a class="btn btn-primary" href="${FAUCET}" ${ext}>Get testnet BTC</a>`,
         })
       : "";
   const isDemo = readOnly && account?.toLowerCase() === DEMO_BORROWER.toLowerCase();
@@ -567,6 +621,7 @@ function render() {
   document.querySelector("#retry")?.addEventListener("click", () => (readOnly ? refresh() : wallet ? checkNetworkAndRead() : connect()));
   document.querySelector("#switch")?.addEventListener("click", runSwitch);
   document.querySelector("#revoke")?.addEventListener("click", revoke);
+  document.querySelector("#test-loan")?.addEventListener("click", openTestLoan);
 }
 
 

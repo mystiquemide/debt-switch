@@ -84,33 +84,33 @@ function isRejection(e: unknown) {
   return e instanceof BaseError && !!e.walk((x) => x instanceof UserRejectedRequestError);
 }
 
+const GENERIC = "Mezo Testnet didn't accept this. Nothing changed. Check again in a moment.";
+
 function decodeError(e: unknown): string {
   if (e instanceof BaseError) {
-    if (e.walk((x) => x instanceof UserRejectedRequestError)) return "You rejected the request in your wallet.";
+    if (e.walk((x) => x instanceof UserRejectedRequestError)) return "You cancelled in your wallet. Nothing changed.";
     const revert = e.walk((x) => x instanceof ContractFunctionRevertedError) as ContractFunctionRevertedError | null;
     if (revert) {
       const name = revert.data?.errorName;
       const args = revert.data?.args ?? [];
       switch (name) {
         case "BelowMinNetDebt":
-          return `Below the ${fmt(args[1] as bigint, 18, 0)} MUSD minimum: this switch would open a trove with ${fmt(args[0] as bigint, 18)} MUSD net debt.`;
+          return `Mezo's fixed-rate loans start at ${fmt(args[1] as bigint, 18, 0)} MUSD. This switch would open one at ${fmt(args[0] as bigint, 18)} MUSD. Nothing changed.`;
         case "InsufficientOutputAmount":
-          return "Slippage: the MUSD to mUSDC swap returned less than your minimum.";
+          return "The swap rate moved before your switch went through. Nothing changed. Check again for a fresh quote.";
         case "SwapBelowFlashLoan":
-          return "The swap didn't return enough mUSDC to repay the flash loan.";
+          return "Mezo Pools didn't return enough to repay your Morpho loan. Nothing changed. Try again in a moment.";
         case "NotBorrower":
-          return "Only the borrower can switch their own position.";
+          return "Only the wallet that owns this loan can switch it. Connect that wallet and try again.";
         case "NoMorphoDebt":
-          return "There's no Morpho debt to switch.";
+          return "There's no Morpho loan in this wallet to switch.";
         case "WrongMarket":
-          return "That market isn't BTC/mUSDC.";
+          return "Debt Switch only works with Mezo's Bitcoin and mUSDC loan market.";
       }
-      if (revert.reason) return revert.reason;
-      if (name) return name;
     }
-    return e.shortMessage;
   }
-  return e instanceof Error ? e.message : String(e);
+  // Never show raw contract or library messages: they leak internals and don't tell people what to do.
+  return e instanceof Error && e.message.startsWith("DS:") ? e.message.slice(3) : GENERIC;
 }
 
 async function connect() {
@@ -123,7 +123,7 @@ async function connect() {
     walletAddr = account;
     await checkNetworkAndRead();
   } catch (e) {
-    phase = { kind: "read-error", message: decodeError(e) };
+    phase = isRejection(e) || (e as { code?: number })?.code === 4001 ? { kind: "rejected" } : { kind: "read-error", message: decodeError(e) };
     render();
   }
 }
@@ -142,6 +142,21 @@ async function checkNetworkAndRead() {
 async function switchNetwork() {
   if (!window.ethereum) return;
   try {
+    await addOrSwitchChain();
+  } catch {
+    networkNote = "Your wallet didn't switch networks. Try again when you're ready.";
+    render();
+    return;
+  }
+  networkNote = "";
+  await checkNetworkAndRead();
+}
+
+let networkNote = "";
+
+async function addOrSwitchChain() {
+  if (!window.ethereum) return;
+  try {
     await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: numberToHex(mezoTestnet.id) }] });
   } catch {
     await window.ethereum.request({
@@ -157,7 +172,6 @@ async function switchNetwork() {
       ],
     });
   }
-  await checkNetworkAndRead();
 }
 
 async function refresh() {
@@ -201,7 +215,7 @@ async function runSwitch() {
       phase = { kind: "busy", flow: "switch", at: 0, step: "Waiting for the Morpho approval to confirm", hash: h };
       render();
       const rc = await publicClient.waitForTransactionReceipt({ hash: h });
-      if (rc.status !== "success") throw new Error("The Morpho approval reverted.");
+      if (rc.status !== "success") throw new Error("DS:Morpho didn't accept the approval. Nothing changed. Try again.");
     }
 
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 20 * 60);
@@ -462,7 +476,7 @@ function body(): string {
     case "wrong-network":
       return stateCard({
         title: "Switch to Mezo Testnet",
-        body: `Your wallet is on chain ${phase.chainId}. Debt Switch runs on Mezo Testnet, chain 31611. Your wallet will ask you to switch, or to add the network if it doesn't know it yet.`,
+        body: `${networkNote ? `${networkNote} ` : ""}Your wallet is on chain ${phase.chainId}. Debt Switch runs on Mezo Testnet, chain 31611. Your wallet will ask you to switch, or to add the network if it doesn't know it yet.`,
         actions: `<button class="btn btn-primary" id="network" type="button">Switch to Mezo Testnet</button>`,
       });
     case "reading":
@@ -479,7 +493,7 @@ function body(): string {
         actions: `<button class="btn btn-primary" id="retry" type="button">Try again</button>`,
       });
   }
-  if (!snap) return "";
+  if (!snap) return status();
   const hasMorpho = snap.morpho.borrowShares > 0n;
   const empty =
     !hasMorpho && snap.trove.status !== 1

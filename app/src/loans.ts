@@ -40,9 +40,9 @@ function cards(f: LoanFacts) {
 
 const loading = `
   <div class="loans-status" role="status"><span class="spin"></span>Reading today's rates from Mezo mainnet</div>`;
-const failed = (msg: string) => `
+const failed = () => `
   <div class="loans-status loans-error" role="alert">
-    <p>Couldn't reach Mezo mainnet just now. ${msg}</p>
+    <p>Couldn't reach Mezo mainnet just now. Try again in a moment.</p>
     <button class="btn btn-secondary" type="button" data-retry>Try again</button>
   </div>`;
 
@@ -71,7 +71,7 @@ export function renderLoans(root: HTMLElement) {
       const time = f.readAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
       source.innerHTML = `Live from Mezo mainnet at ${time} UTC, block <a href="https://explorer.mezo.org/block/${f.block}" target="_blank" rel="noopener">${num(Number(f.block))}</a>`;
     } catch (e) {
-      grid.innerHTML = failed(e instanceof Error && e.message.length < 120 ? e.message : "Please try again in a moment.");
+      grid.innerHTML = failed();
       grid.querySelector("[data-retry]")?.addEventListener("click", load);
     }
   };

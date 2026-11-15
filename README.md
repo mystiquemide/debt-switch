@@ -4,6 +4,7 @@
 
 ### Switch a Bitcoin loan on Mezo between variable mUSDC and fixed MUSD in one transaction, without repaying first.
 
+[![Demo video](https://img.shields.io/badge/demo-video-ff004d)](https://youtu.be/XmCm4Nom_JA)
 [![Live app](https://img.shields.io/badge/live%20app-debtswitch.midelabs.xyz-f7931a)](https://debtswitch.midelabs.xyz)
 [![Mainnet](https://img.shields.io/badge/Mezo%20mainnet-fork%20tested-1f2937)](test/MainnetFork.t.sol)
 [![Testnet](https://img.shields.io/badge/Mezo%20Testnet-live-1f2937)](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7)
@@ -12,7 +13,7 @@
 [![Contracts](https://img.shields.io/badge/contracts-source%20verified-3ccf8e)](#contracts)
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 
-**[Live app](https://debtswitch.midelabs.xyz)** · **[See a switched loan, no wallet needed](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)** · **[Preview a real mainnet loan](https://debtswitch.midelabs.xyz/app/?network=mainnet&address=0x965c18b6ac7d233c00c93c7c0039bef6a6035d26)** · **[Judge guide](JUDGE.md)** · **[Deck](docs/Debt-Switch-deck.pdf)** · **[The switch on the explorer](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5)** · **[Router contract](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract)**
+**[Demo video](https://youtu.be/XmCm4Nom_JA)** · **[Live app](https://debtswitch.midelabs.xyz)** · **[See a switched loan, no wallet needed](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)** · **[Preview a real mainnet loan](https://debtswitch.midelabs.xyz/app/?network=mainnet&address=0x965c18b6ac7d233c00c93c7c0039bef6a6035d26)** · **[Judge guide](JUDGE.md)** · **[Deck](docs/Debt-Switch-deck.pdf)** · **[The switch on the explorer](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5)** · **[Router contract](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract)**
 
 </div>
 
@@ -363,7 +364,7 @@ All four of our contracts are source-verified on the Mezo testnet explorer.
 | Product & Business Viability | 30% | It answers the Track 1 question directly: it adds a route from existing variable-rate debt into MUSD, using only Mezo's existing products. On mainnet, 99.98% of the Morpho BTC/mUSDC market's debt sits above the trove minimum and pays 2.23% variable against 1.00% fixed. Pool depth caps switch size today, and that's addressed in the milestones. See [At a glance](#at-a-glance). |
 | Technical Implementation | 20% | An immutable, atomic router with zero retained balances. Fork tests against live Mezo contracts, on-chain refusals, source-verified contracts. See [Security](#security). |
 | User Experience | 10% | One approval, one signature, one transaction. A live preview with block reasons, decoded errors, a network guard, one-click revoke, and a read-only view anyone can open without a wallet. See [Screens](#screens). |
-| Submission Materials | 10% | This README, [JUDGE.md](JUDGE.md), the [deck](docs/Debt-Switch-deck.pdf), the live app and the pitch video. |
+| Submission Materials | 10% | This README, [JUDGE.md](JUDGE.md), the [deck](docs/Debt-Switch-deck.pdf), the live app and the [demo video](https://youtu.be/XmCm4Nom_JA). |
 
 ## Run it locally
 

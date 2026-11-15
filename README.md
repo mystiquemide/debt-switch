@@ -33,7 +33,7 @@ Anything left over goes back to you in the same transaction. The router keeps no
 
 ## Try it in 2 minutes
 
-There's no hosted app yet. The fastest checks:
+Live app: **https://debtswitch.midelabs.xyz** (Mezo Testnet, chain 31611).
 
 1. Open the [switch transaction](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5) and read the logs: Morpho `Repay` and `WithdrawCollateral`, Mezo `TroveUpdated`, the MUSD/mUSDC swap, and the flash loan settling, all in one transaction.
 2. Read the result yourself:
@@ -44,13 +44,7 @@ cast call 0xE47c80e8c23f6B4A1aE41c34837a0599D5D16bb0 "getTroveStatus(address)(ui
 
 It returns `1`, an active trove. The same borrower's Morpho position reads 0 debt and 0 collateral.
 
-3. Run the app against testnet with any browser wallet on Mezo Testnet (chain 31611):
-
-```bash
-cd app && npm install && npm run dev
-```
-
-The app reads both positions live. To switch, the wallet needs an open loan on the Debt Switch Morpho market below and no existing trove.
+3. Open the app with any browser wallet on Mezo Testnet. It reads both positions live. To switch, the wallet needs an open loan on the Debt Switch Morpho market below and no existing trove.
 
 ## Ways I tried to break it
 

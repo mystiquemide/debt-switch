@@ -43,6 +43,8 @@ contract MorphoToTroveForkTest is Test {
     uint256 constant COLLATERAL = 0.1e18; // 0.1 BTC
     uint256 constant MORPHO_DEBT = 1_500e6; // 1,500 mUSDC
 
+    bytes32 constant CLOSE_TROVE_TYPEHASH =
+        keccak256("CloseTrove(address borrower,address recipient,uint256 nonce,uint256 deadline)");
     bytes32 constant OPEN_TROVE_TYPEHASH = keccak256(
         "OpenTrove(uint256 assetAmount,uint256 debtAmount,address borrower,address recipient,uint256 nonce,uint256 deadline)"
     );
@@ -192,7 +194,108 @@ contract MorphoToTroveForkTest is Test {
         router.morphoToTrove(p);
     }
 
+    // --- reverse direction: trove to Morpho ---
+
+    function test_TroveToMorpho_SwitchesWholePosition() public {
+        _switchToTrove();
+        ITroveManager tm = ITroveManager(TROVE_MANAGER);
+        assertEq(tm.getTroveStatus(borrower), 1, "trove open before");
+
+        DebtSwitchRouter.TroveToMorphoParams memory p = _closeParams();
+        vm.prank(borrower);
+        router.troveToMorpho(p);
+
+        assertEq(tm.getTroveStatus(borrower), 2, "trove closed by owner");
+        Position memory pos = morpho.position(market.id(), borrower);
+        assertEq(pos.collateral, COLLATERAL, "all BTC now on Morpho");
+        assertGt(pos.borrowShares, 0, "Morpho loan opened");
+        _assertRouterEmpty();
+    }
+
+    function test_TroveToMorpho_RouterHoldsNothing() public {
+        _switchToTrove();
+        DebtSwitchRouter.TroveToMorphoParams memory p = _closeParams();
+        vm.prank(borrower);
+        router.troveToMorpho(p);
+        _assertRouterEmpty();
+    }
+
+    function test_TroveToMorpho_RevertWhen_CallerNotBorrower() public {
+        _switchToTrove();
+        DebtSwitchRouter.TroveToMorphoParams memory p = _closeParams();
+        vm.expectRevert(DebtSwitchRouter.NotBorrower.selector);
+        vm.prank(makeAddr("attacker"));
+        router.troveToMorpho(p);
+    }
+
+    function test_TroveToMorpho_RevertWhen_SlippageExceeded() public {
+        _switchToTrove();
+        DebtSwitchRouter.TroveToMorphoParams memory p = _closeParams();
+        p.minMusdOut = type(uint128).max;
+        vm.expectRevert(bytes4(keccak256("InsufficientOutputAmount()")));
+        vm.prank(borrower);
+        router.troveToMorpho(p);
+        assertEq(ITroveManager(TROVE_MANAGER).getTroveStatus(borrower), 1, "trove untouched");
+    }
+
+    function test_TroveToMorpho_RevertWhen_SignatureReplayed() public {
+        _switchToTrove();
+        DebtSwitchRouter.TroveToMorphoParams memory p = _closeParams();
+        // The first switch uses the close signature. Sending the same signature again must fail at Mezo's nonce check.
+        vm.prank(borrower);
+        router.troveToMorpho(p);
+        // The pool price moved, so drop the swap floor to reach the signature check itself.
+        p.minMusdOut = 0;
+        vm.expectRevert(bytes("BorrowerOperationsSignatures: Invalid signature"));
+        vm.prank(borrower);
+        router.troveToMorpho(p);
+    }
+
     // --- helpers ---
+
+    function _switchToTrove() internal {
+        DebtSwitchRouter.MorphoToTroveParams memory p = _params(_troveDebtFor(MORPHO_DEBT));
+        vm.prank(borrower);
+        router.morphoToTrove(p);
+        // The forward switch refunds mUSDC to the borrower. Spend it, so the reverse switch starts from zero.
+        uint256 bal = IERC20Min(MUSDC).balanceOf(borrower);
+        vm.prank(borrower);
+        IERC20Min(MUSDC).transfer(makeAddr("spent"), bal);
+    }
+
+    /// Flash enough mUSDC that its swap covers the trove's debt less Mezo's 200 MUSD reserve, with 2% headroom.
+    function _closeParams() internal view returns (DebtSwitchRouter.TroveToMorphoParams memory p) {
+        uint256 owed = ITroveManager(TROVE_MANAGER).getTroveDebt(borrower) - 200e18;
+        IPoolRouter.Route[] memory r = new IPoolRouter.Route[](1);
+        r[0] = IPoolRouter.Route(MUSDC, MUSD, true, POOL_FACTORY);
+        uint256 musdPerThousand = IPoolRouter(POOL_ROUTER).getAmountsOut(1_000e6, r)[1];
+        uint256 flash = owed * 1_000e6 / musdPerThousand * 102 / 100;
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 nonce = IBorrowerOperationsSignatures(TROVE_SIGS).getNonce(borrower);
+        bytes32 structHash = keccak256(abi.encode(CLOSE_TROVE_TYPEHASH, borrower, address(router), nonce, deadline));
+        (uint8 v, bytes32 rr, bytes32 ss) =
+            vm.sign(borrowerKey, keccak256(abi.encodePacked("\x19\x01", _domain(), structHash)));
+        p = DebtSwitchRouter.TroveToMorphoParams({
+            market: market,
+            borrower: borrower,
+            flashAmount: flash,
+            minMusdOut: owed,
+            deadline: deadline,
+            troveSignature: abi.encodePacked(rr, ss, v)
+        });
+    }
+
+    function _domain() internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256("BorrowerOperationsSignatures"),
+                keccak256("1"),
+                block.chainid,
+                TROVE_SIGS
+            )
+        );
+    }
 
     function _installStandIns() internal {
         bytes memory raw =

@@ -502,7 +502,7 @@ function body(): string {
     !hasMorpho && snap.trove.status === 1 && !isDemo && phase.kind !== "switched"
       ? stateCard({
           title: readOnly ? "This loan is already on a fixed rate" : "Your loan is already on a fixed rate",
-          body: `${readOnly ? "This wallet has" : "You have"} an MUSD loan at ${(snap.trove.rateBps / 100).toFixed(2)}% fixed, so there's nothing to switch. Moving a fixed-rate loan back to Morpho is the next thing being built.`,
+          body: `${readOnly ? "This wallet has" : "You have"} an MUSD loan at ${(snap.trove.rateBps / 100).toFixed(2)}% fixed, so there's nothing to switch here. Moving it back to Morpho is built and tested, and comes to the app next.`,
           actions: `<a class="btn btn-primary" href="${addrUrl(account!)}" ${ext}>View on the explorer</a>`,
         })
       : "";

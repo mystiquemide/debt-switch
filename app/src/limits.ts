@@ -14,8 +14,8 @@ const items = [
     a: "Debt Switch runs on Mezo Testnet with testnet funds. The code is tested against Mezo's real contracts, but it hasn't had a security audit. Don't use it with real money.",
   },
   {
-    q: "One direction for now",
-    a: "Today it moves a Morpho loan into a fixed-rate MUSD loan. Moving a fixed-rate loan back to Morpho is the next thing being built.",
+    q: "Moving back to Morpho isn't live yet",
+    a: "The app moves a Morpho loan into a fixed-rate MUSD loan. The reverse, an MUSD loan back to Morpho, is built and tested against Mezo's real contracts, and goes live in the app once the testnet market has enough liquidity for it.",
   },
   {
     q: "You can turn off access any time",

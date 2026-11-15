@@ -20,6 +20,9 @@ interface IBorrowerOperationsSignatures {
         uint256 deadline
     ) external payable;
 
+    function closeTroveWithSignature(address borrower, address recipient, bytes memory signature, uint256 deadline)
+        external;
+
     function getNonce(address user) external view returns (uint256);
 }
 

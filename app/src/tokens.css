@@ -4,16 +4,21 @@
 @import "@fontsource/inter/600.css";
 
 :root {
-  --canvas: #fff3e7;
+  /* Mezo palette: near-white with a pink blush, Mezo red, plum and soft pink */
+  --canvas: #fdf5f7;
   --ink: #030302;
   --graphite: #41413f;
   --muted: #6f6c69;
   --ash: #e1e1e1;
   --white: #ffffff;
-  --mint: #9bd8a9;
-  --marigold: #fde99b;
-  --periwinkle: #b8caf5;
-  --papaya: #ff4500;
+  --mint: #ffc9d8; /* fixed rate, MUSD, success: Mezo soft pink */
+  --marigold: #ffe3b8; /* notes and warnings: Mezo amber, softened */
+  --periwinkle: #eadcf0; /* variable rate, Morpho: plum tint */
+  --papaya: #ff004d; /* Mezo red */
+  --plum: #990070;
+  --blush: radial-gradient(60% 70% at 85% 10%, rgba(255, 0, 77, 0.22), transparent 70%),
+    radial-gradient(55% 60% at 10% 30%, rgba(153, 0, 112, 0.14), transparent 70%),
+    radial-gradient(70% 80% at 50% 100%, rgba(255, 131, 166, 0.25), transparent 70%), #fdf5f7;
   --azure: #0087ff;
 
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;

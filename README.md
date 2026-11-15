@@ -6,7 +6,7 @@
 
 [![Demo video](https://img.shields.io/badge/demo-video-ff004d)](https://youtu.be/XmCm4Nom_JA)
 [![Live app](https://img.shields.io/badge/live%20app-debtswitch.midelabs.xyz-f7931a)](https://debtswitch.midelabs.xyz)
-[![Mainnet](https://img.shields.io/badge/Mezo%20mainnet-fork%20tested-1f2937)](test/MainnetFork.t.sol)
+[![Mainnet](https://img.shields.io/badge/Mezo%20mainnet-deployed-1f2937)](https://explorer.mezo.org/address/0xB0F9333b3A70F54798A08c44dd76198a440f29E4?tab=contract)
 [![Testnet](https://img.shields.io/badge/Mezo%20Testnet-live-1f2937)](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7)
 [![Track](https://img.shields.io/badge/Mezo%20Buildathon-Track%201%3A%20DeFi-7c3aed)](#tracks)
 [![CI](https://github.com/mystiquemide/debt-switch/actions/workflows/ci.yml/badge.svg)](https://github.com/mystiquemide/debt-switch/actions/workflows/ci.yml)
@@ -354,7 +354,7 @@ All four of our contracts are source-verified on the Mezo testnet explorer.
 |---|---|---|
 | 1. Multi-pool routing | Route the MUSD-to-mUSDC leg across several Mezo pools (MUSD/mUSDC, MUSD/mUSDT, MUSD/BTC) so larger loans clear mainnet liquidity | December 2026 |
 | 2. Reverse switch live | `troveToMorpho` is built and fork-tested. Ship it in a redeployed router and in the app, once the testnet market has the liquidity it needs | December 2026 |
-| 3. Mainnet launch | Audit the router, deploy it against Mezo's own Morpho BTC/mUSDC market (`0x6f88e79e...33db` on Morpho `0x5658...a311`) and turn on sending in the app's Mainnet tab, with partial switches. Both switches already pass against these contracts on a mainnet fork. | Q1 2027 |
+| 3. Mainnet launch | The router is already deployed against Mezo's own Morpho BTC/mUSDC market (`0x6f88e79e...33db` on Morpho `0x5658...a311`). Audit it, then turn on sending in the app's Mainnet tab, with partial switches. | Q1 2027 |
 
 ## How Debt Switch maps to the judging criteria
 
@@ -390,7 +390,7 @@ docs/         screenshots
 ## Limits
 
 - **Unaudited.** Tests and live testnet runs aren't an audit. Don't use this with real funds.
-- **Mainnet-ready, not deployed yet.** Both switches pass against Mezo mainnet's real Morpho BTC/mUSDC market, BorrowerOperationsSignatures, TroveManager and MUSD/mUSDC pool on a fork ([`test/MainnetFork.t.sol`](test/MainnetFork.t.sol)), with no code changes. The app's Mainnet tab reads real mainnet loans and prices their switch live. Deploying costs about 2.2M gas (under $1), and we're holding it until an audit so nobody risks real money on unaudited code. The live switch runs on testnet against our own Morpho Blue instance, since Mezo testnet has no official one.
+- **Deployed on Mezo mainnet, sending held for an audit.** The router is live at [`0xB0F9...29E4`](https://explorer.mezo.org/address/0xB0F9333b3A70F54798A08c44dd76198a440f29E4?tab=contract), wired to Mezo's own Morpho BTC/mUSDC market, BorrowerOperationsSignatures, MUSD and Mezo Pools. Both switches pass against those contracts on a mainnet fork ([`test/MainnetFork.t.sol`](test/MainnetFork.t.sol)). The app's Mainnet tab reads real loans and prices the switch live, but doesn't send until an audit, so nobody risks real money on unaudited code. The live switch runs on testnet against our own Morpho Blue instance, since Mezo testnet has no official one.
 - **The reverse switch isn't live yet.** `troveToMorpho`, moving an MUSD trove back to Morpho, is in the router code and passes 5 fork tests against Mezo's real contracts. The router deployed on testnet predates it. Going live needs a redeploy and about 2,900 mUSDC of idle liquidity in the testnet market, because the flash loan and the new Morpho borrow draw on it in the same transaction.
 - **Whole positions only.** Partial switches come with mainnet (milestone 3).
 - **The 1,800 MUSD floor.** Morpho loans under the floor become an 1,800 MUSD trove, and the extra comes back as mUSDC.

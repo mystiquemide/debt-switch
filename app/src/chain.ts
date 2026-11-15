@@ -35,8 +35,10 @@ export const IS_MAINNET = NETWORK === "mainnet";
 /** The chain the app is pointed at. */
 export const activeChain = IS_MAINNET ? mezoMainnet : mezoTestnet;
 const deployments = IS_MAINNET ? mainnetDeployments : testnetDeployments;
-/** False on mainnet until the router is deployed there: the app reads and previews, but can't send a switch. */
-export const ROUTER_LIVE = /^0x0+$/.test(deployments.debtSwitchRouter) === false;
+/** False on mainnet: the router is deployed, but the app keeps sending off there until an audit. */
+export const ROUTER_LIVE = deployments.sendingEnabled === true;
+/** The deployed router on the active network. */
+export const ROUTER_ADDRESS = deployments.debtSwitchRouter as Address;
 
 export const publicClient = createPublicClient({ chain: activeChain, transport: http() });
 

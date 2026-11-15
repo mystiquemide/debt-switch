@@ -66,7 +66,7 @@ Get about 0.05 testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org),
 
 ### Mainnet
 
-The app has a **Testnet / Mainnet** switch. Mainnet reads real loans on Mezo's own Morpho BTC/mUSDC market and prices the switch from the live mainnet pool, for example **https://debtswitch.midelabs.xyz/app/?network=mainnet&address=0x965c18b6ac7d233c00c93c7c0039bef6a6035d26**. Sending a mainnet switch is off until an audit. `test/MainnetFork.t.sol` runs both switches against those mainnet contracts on a fork.
+The app has a **Testnet / Mainnet** switch. Mainnet reads real loans on Mezo's own Morpho BTC/mUSDC market and prices the switch from the live mainnet pool, for example **https://debtswitch.midelabs.xyz/app/?network=mainnet&address=0x965c18b6ac7d233c00c93c7c0039bef6a6035d26**. The router is deployed on Mezo mainnet at [`0xB0F9333b3A70F54798A08c44dd76198a440f29E4`](https://explorer.mezo.org/address/0xB0F9333b3A70F54798A08c44dd76198a440f29E4?tab=contract). Sending from the app stays off until an audit. `test/MainnetFork.t.sol` runs both switches against those mainnet contracts on a fork.
 
 ## 3. The refusals (1 minute)
 

@@ -20,5 +20,6 @@
     "poolFactory": "0x4947243CC818b627A5D06d14C4eCe7398A23Ce1A",
     "musdMusdcPool": "0x525F049A4494dA0a6c87E3C4df55f9929765Dc3e",
     "hintHelpers": "0x4e4cBA3779d56386ED43631b4dCD6d8EacEcBCF6"
-  }
+  },
+  "sendingEnabled": true
 }

@@ -1,7 +1,7 @@
 {
   "chainId": 31612,
-  "note": "Mezo mainnet. Morpho Blue and its BTC/mUSDC market are Mezo's own. The router isn't deployed here yet: both switches pass on a mainnet fork (test/MainnetFork.t.sol).",
-  "debtSwitchRouter": "0x0000000000000000000000000000000000000000",
+  "note": "Mezo mainnet. Morpho Blue and its BTC/mUSDC market are Mezo's own. DebtSwitchRouter is deployed and source-verified here. The app reads and previews on mainnet, and sending stays off until an audit.",
+  "debtSwitchRouter": "0xB0F9333b3A70F54798A08c44dd76198a440f29E4",
   "morpho": "0x565834cE7E40b8987BC20EbF83E2159467bDA311",
   "irm": "0x3760Ebc636F912a4dB9540fdA4Dec09C25C6C1e7",
   "oracle": "0xeA0597D3d44FF2ea1E4c35501e153f4C025e48d1",
@@ -20,5 +20,7 @@
     "poolFactory": "0x83FE469C636C4081b87bA5b3Ae9991c6Ed104248",
     "musdMusdcPool": "0xEd812AEc0Fecc8fD882Ac3eccC43f3aA80A6c356",
     "hintHelpers": "0x0000000000000000000000000000000000000000"
-  }
+  },
+  "deployTx": "0xe0aa36e1446d88c225cfe585690962cc8e2f031e9771796c0766adad0716e364",
+  "sendingEnabled": false
 }

@@ -28,6 +28,7 @@ import {
   activeChain,
   IS_MAINNET,
   ROUTER_LIVE,
+  ROUTER_ADDRESS,
   morphoAbi,
   pct,
   publicClient,
@@ -79,7 +80,7 @@ const MAINNET_SAMPLE_HREF = `/app/?network=mainnet&address=${MAINNET_SAMPLE}`;
 const FAUCET = "https://faucet.test.mezo.org";
 const nav = renderAppNav(document.querySelector<HTMLDivElement>("#nav")!, {
   demoHref: `/app/?address=${DEMO_BORROWER}`,
-  explorerHref: `https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7`,
+  explorerHref: addrUrl(ROUTER_ADDRESS),
 });
 const ext = 'target="_blank" rel="noopener"';
 
@@ -427,7 +428,7 @@ function previewCard(s: Snapshot, p: Preview) {
   const poolRate = p.troveDebt > 0n ? Number((p.swapOut * 10n ** 12n * 10000n) / p.troveDebt) / 10000 : 1;
   const sizedUp = s.morpho.debtAssets * 10n ** 12n < s.minNetDebt;
   const action = !ROUTER_LIVE
-    ? `<p class="preview-readonly">This is the switch Debt Switch would send on Mezo mainnet, priced from the live pool. Mainnet switching opens after the audit. It already passes on a mainnet fork, and you can switch a test loan on testnet now.</p>`
+    ? `<p class="preview-readonly">This is the switch Debt Switch's mainnet router would send, priced from the live pool. The router is deployed and verified on Mezo mainnet, and sending from the app opens after an audit. You can switch a test loan on testnet now.</p>`
     : readOnly
     ? `<p class="preview-readonly">This is a read-only view. Connect this wallet to switch it.</p>`
     : blocked
@@ -545,7 +546,7 @@ function body(): string {
       return stateCard({
         title: "Connect your wallet",
         body: IS_MAINNET
-          ? "Use the wallet that holds your Morpho loan on Mezo. The app reads your loan and previews the switch. Mainnet switching opens after the audit, so nothing can be sent from here yet."
+          ? "Use the wallet that holds your Morpho loan on Mezo. The app reads your loan and previews the switch. The router is deployed on mainnet, and sending from the app opens after an audit."
           : `Use the wallet that holds your loan on ${NET}. Connecting only lets the app read your loans. Nothing moves until you sign.`,
         actions: `<button class="btn btn-primary" id="connect" type="button">Connect wallet</button>
           <a class="btn btn-secondary" href="${DEMO_HREF}">See a real switched loan</a>`,

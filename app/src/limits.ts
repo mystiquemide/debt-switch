@@ -11,7 +11,7 @@ const items = [
   },
   {
     q: "Mainnet switching waits for an audit",
-    a: "Both switches pass against Mezo mainnet's real Morpho market, troves and pool on a mainnet fork, and the app reads real mainnet loans and prices their switch live. Sending a switch on mainnet opens after a security audit. Until then you can switch a test loan on Mezo Testnet.",
+    a: "Both switches pass against Mezo mainnet's real Morpho market, troves and pool on a mainnet fork, and the app reads real mainnet loans and prices their switch live. The router is deployed on Mezo mainnet, and sending from the app opens after a security audit. Until then you can switch a test loan on Mezo Testnet.",
   },
   {
     q: "Moving back to Morpho isn't live yet",

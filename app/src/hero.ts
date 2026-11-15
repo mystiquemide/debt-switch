@@ -18,7 +18,7 @@ export function renderHero(root: HTMLElement) {
       alt="" fetchpriority="high" />
     <div class="hero-inner">
       <div class="hero-copy">
-        <p class="hero-kicker">Live on Mezo Testnet</p>
+        <p class="hero-kicker">Works on Mezo mainnet. Try it live on testnet</p>
         <h1 id="hero-title">Change your Bitcoin loan without paying it back first</h1>
         <p class="hero-sub">Move a loan from Morpho's variable rate to Mezo's fixed-rate MUSD in one transaction. No stablecoins needed.</p>
         <div class="hero-ctas">

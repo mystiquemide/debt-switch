@@ -25,7 +25,9 @@ import {
   erc20Abi,
   buildPreview,
   fmt,
-  mezoTestnet,
+  activeChain,
+  IS_MAINNET,
+  ROUTER_LIVE,
   morphoAbi,
   pct,
   publicClient,
@@ -71,6 +73,9 @@ let walletAddr: Address | undefined;
 const DEMO_BORROWER = "0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4" as Address;
 const DEMO_SWITCH_TX = "0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5" as Hex;
 const DEMO_HREF = `/app/?address=${DEMO_BORROWER}`;
+// A real Mezo mainnet borrower on the Morpho BTC/mUSDC market, about 2,200 mUSDC: a size the mainnet pool can switch.
+const MAINNET_SAMPLE = "0x965c18b6ac7d233c00c93c7c0039bef6a6035d26";
+const MAINNET_SAMPLE_HREF = `/app/?network=mainnet&address=${MAINNET_SAMPLE}`;
 const FAUCET = "https://faucet.test.mezo.org";
 const nav = renderAppNav(document.querySelector<HTMLDivElement>("#nav")!, {
   demoHref: `/app/?address=${DEMO_BORROWER}`,
@@ -86,7 +91,8 @@ function isRejection(e: unknown) {
   return e instanceof BaseError && !!e.walk((x) => x instanceof UserRejectedRequestError);
 }
 
-const GENERIC = "Mezo Testnet didn't accept this. Nothing changed. Check again in a moment.";
+const NET = activeChain.name;
+const GENERIC = `${NET} didn't accept this. Nothing changed. Check again in a moment.`;
 
 function decodeError(e: unknown): string {
   if (e instanceof BaseError) {
@@ -119,9 +125,9 @@ async function connect() {
   if (!window.ethereum) return;
   readOnly = false;
   localStorage.removeItem(DISCONNECTED_KEY);
-  if (location.search) history.replaceState(null, "", location.pathname);
+  if (location.search) history.replaceState(null, "", IS_MAINNET ? `${location.pathname}?network=mainnet` : location.pathname);
   try {
-    wallet = createWalletClient({ chain: mezoTestnet, transport: custom(window.ethereum) });
+    wallet = createWalletClient({ chain: activeChain, transport: custom(window.ethereum) });
     [account] = await wallet.requestAddresses();
     walletAddr = account;
     await checkNetworkAndRead();
@@ -149,7 +155,7 @@ async function disconnect() {
 async function checkNetworkAndRead() {
   if (!wallet) return;
   const chainId = await wallet.getChainId();
-  if (chainId !== mezoTestnet.id) {
+  if (chainId !== activeChain.id) {
     phase = { kind: "wrong-network", chainId };
     render();
     return;
@@ -175,17 +181,17 @@ let networkNote = "";
 async function addOrSwitchChain() {
   if (!window.ethereum) return;
   try {
-    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: numberToHex(mezoTestnet.id) }] });
+    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: numberToHex(activeChain.id) }] });
   } catch {
     await window.ethereum.request({
       method: "wallet_addEthereumChain",
       params: [
         {
-          chainId: numberToHex(mezoTestnet.id),
-          chainName: mezoTestnet.name,
-          nativeCurrency: mezoTestnet.nativeCurrency,
-          rpcUrls: [...mezoTestnet.rpcUrls.default.http],
-          blockExplorerUrls: [mezoTestnet.blockExplorers.default.url],
+          chainId: numberToHex(activeChain.id),
+          chainName: activeChain.name,
+          nativeCurrency: activeChain.nativeCurrency,
+          rpcUrls: [...activeChain.rpcUrls.default.http],
+          blockExplorerUrls: [activeChain.blockExplorers.default.url],
         },
       ],
     });
@@ -229,7 +235,7 @@ async function runSwitch() {
       render();
       const h = await wallet.writeContract({
         account,
-        chain: mezoTestnet,
+        chain: activeChain,
         address: ADDR.morpho,
         abi: morphoAbi,
         functionName: "setAuthorization",
@@ -285,12 +291,12 @@ async function runSwitch() {
     const gas = await publicClient.estimateContractGas({ ...request, account });
     phase = { kind: "busy", flow: "switch", at: 3, step: "Confirm the switch in your wallet" };
     render();
-    hash = await wallet.writeContract({ ...request, account, chain: mezoTestnet, gas: (gas * 3n) / 2n });
-    phase = { kind: "busy", flow: "switch", at: 4, step: "Sent. Waiting for Mezo Testnet to confirm", hash };
+    hash = await wallet.writeContract({ ...request, account, chain: activeChain, gas: (gas * 3n) / 2n });
+    phase = { kind: "busy", flow: "switch", at: 4, step: `Sent. Waiting for ${NET} to confirm`, hash };
     render();
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") {
-      phase = { kind: "reverted", message: "The switch didn't go through on Mezo Testnet.", hash };
+      phase = { kind: "reverted", message: `The switch didn't go through on ${NET}.`, hash };
       render();
       return;
     }
@@ -311,7 +317,7 @@ async function revoke() {
     render();
     const h = await wallet.writeContract({
       account,
-      chain: mezoTestnet,
+      chain: activeChain,
       address: ADDR.morpho,
       abi: morphoAbi,
       functionName: "setAuthorization",
@@ -340,7 +346,7 @@ async function openTestLoan() {
       phase = { kind: "busy", flow: "loan", at: 0, step: "Let Morpho use your test BTC: confirm in your wallet" };
       render();
       const h = await wallet.writeContract({
-        account, chain: mezoTestnet, address: ADDR.btc, abi: erc20Abi, functionName: "approve", args: [ADDR.morpho, TEST_LOAN.collateral],
+        account, chain: activeChain, address: ADDR.btc, abi: erc20Abi, functionName: "approve", args: [ADDR.morpho, TEST_LOAN.collateral],
       });
       phase = { kind: "busy", flow: "loan", at: 0, step: "Waiting for the approval to confirm", hash: h };
       render();
@@ -351,7 +357,7 @@ async function openTestLoan() {
     const sup = await publicClient.simulateContract({
       account, address: ADDR.morpho, abi: morphoAbi, functionName: "supplyCollateral", args: [market, TEST_LOAN.collateral, account, "0x"],
     });
-    const h1 = await wallet.writeContract({ ...sup.request, account, chain: mezoTestnet });
+    const h1 = await wallet.writeContract({ ...sup.request, account, chain: activeChain });
     phase = { kind: "busy", flow: "loan", at: 1, step: "Waiting for the collateral to confirm", hash: h1 };
     render();
     if ((await publicClient.waitForTransactionReceipt({ hash: h1 })).status !== "success") throw new Error("DS:Adding collateral didn't go through. Your BTC is still in your wallet.");
@@ -360,7 +366,7 @@ async function openTestLoan() {
     const bor = await publicClient.simulateContract({
       account, address: ADDR.morpho, abi: morphoAbi, functionName: "borrow", args: [market, TEST_LOAN.borrow, 0n, account, account],
     });
-    const h2 = await wallet.writeContract({ ...bor.request, account, chain: mezoTestnet });
+    const h2 = await wallet.writeContract({ ...bor.request, account, chain: activeChain });
     phase = { kind: "busy", flow: "loan", at: 2, step: "Waiting for the loan to confirm", hash: h2 };
     render();
     if ((await publicClient.waitForTransactionReceipt({ hash: h2 })).status !== "success")
@@ -420,7 +426,9 @@ function previewCard(s: Snapshot, p: Preview) {
   const rate = `${(s.troveRateBps / 100).toFixed(2)}%`;
   const poolRate = p.troveDebt > 0n ? Number((p.swapOut * 10n ** 12n * 10000n) / p.troveDebt) / 10000 : 1;
   const sizedUp = s.morpho.debtAssets * 10n ** 12n < s.minNetDebt;
-  const action = readOnly
+  const action = !ROUTER_LIVE
+    ? `<p class="preview-readonly">This is the switch Debt Switch would send on Mezo mainnet, priced from the live pool. Mainnet switching opens after the audit. It already passes on a mainnet fork, and you can switch a test loan on testnet now.</p>`
+    : readOnly
     ? `<p class="preview-readonly">This is a read-only view. Connect this wallet to switch it.</p>`
     : blocked
       ? ""
@@ -528,7 +536,7 @@ function body(): string {
     case "no-wallet":
       return stateCard({
         title: "You'll need a browser wallet",
-        body: "Debt Switch works with browser wallets that support Mezo Testnet, like Rabby or MetaMask. You can still see a real switched loan without one.",
+        body: `Debt Switch works with browser wallets that support ${NET}, like Rabby or MetaMask. You can still see a real switched loan without one.`,
         actions: `<a class="btn btn-primary" href="${DEMO_HREF}">See a real switched loan</a>
           <a class="btn btn-secondary" href="https://rabby.io" ${ext}>Get Rabby</a>
           <a class="btn btn-secondary" href="https://metamask.io/download/" ${ext}>Get MetaMask</a>`,
@@ -536,26 +544,28 @@ function body(): string {
     case "disconnected":
       return stateCard({
         title: "Connect your wallet",
-        body: "Use the wallet that holds your loan on Mezo Testnet. Connecting only lets the app read your loans. Nothing moves until you sign.",
+        body: IS_MAINNET
+          ? "Use the wallet that holds your Morpho loan on Mezo. The app reads your loan and previews the switch. Mainnet switching opens after the audit, so nothing can be sent from here yet."
+          : `Use the wallet that holds your loan on ${NET}. Connecting only lets the app read your loans. Nothing moves until you sign.`,
         actions: `<button class="btn btn-primary" id="connect" type="button">Connect wallet</button>
           <a class="btn btn-secondary" href="${DEMO_HREF}">See a real switched loan</a>`,
       });
     case "wrong-network":
       return stateCard({
-        title: "Switch to Mezo Testnet",
-        body: `${networkNote ? `${networkNote} ` : ""}Your wallet is on chain ${phase.chainId}. Debt Switch runs on Mezo Testnet, chain 31611. Your wallet will ask you to switch, or to add the network if it doesn't know it yet.`,
-        actions: `<button class="btn btn-primary" id="network" type="button">Switch to Mezo Testnet</button>`,
+        title: `Switch to ${NET}`,
+        body: `${networkNote ? `${networkNote} ` : ""}Your wallet is on chain ${phase.chainId}. This view runs on ${NET}, chain ${activeChain.id}. Your wallet will ask you to switch, or to add the network if it doesn't know it yet.`,
+        actions: `<button class="btn btn-primary" id="network" type="button">Switch to ${NET}</button>`,
       });
     case "reading":
       return `<section class="loans-pair loans-reading" aria-busy="true" aria-label="Your loans">
           <article class="loan loan-outline"><p class="tag tag-var">Variable rate</p><h2>Morpho mUSDC</h2></article>
           <article class="loan loan-outline"><p class="tag tag-fixed">Fixed rate</p><h2>MUSD trove</h2></article>
         </section>
-        <p class="reading" role="status"><span class="spin"></span>Reading your loans from Mezo Testnet</p>`;
+        <p class="reading" role="status"><span class="spin"></span>Reading your loans from ${NET}</p>`;
     case "read-error":
       return stateCard({
         tone: "error",
-        title: "Couldn't reach Mezo Testnet",
+        title: `Couldn't reach ${NET}`,
         body: "We couldn't read your loans just now. Check your connection, then try again. Your loans aren't affected.",
         actions: `<button class="btn btn-primary" id="retry" type="button">Try again</button>`,
       });
@@ -566,12 +576,14 @@ function body(): string {
     !hasMorpho && snap.trove.status !== 1
       ? stateCard({
           title: readOnly ? "This wallet has no loan on Mezo yet" : "You don't have a loan on Mezo yet",
-          body: readOnly
-            ? "Debt Switch moves an existing Morpho loan into a fixed-rate MUSD loan. This wallet has neither."
+          body: readOnly || IS_MAINNET
+            ? `Debt Switch moves an existing Morpho loan into a fixed-rate MUSD loan. ${readOnly ? "This wallet has" : "You have"} neither on ${NET}.${IS_MAINNET ? " See a real mainnet Morpho loan instead, or try the full switch on testnet." : ""}`
             : snap.wallet.btc >= TEST_LOAN.collateral + 10n ** 15n
               ? `Open a ${fmt(TEST_LOAN.borrow, 6, 0)} mUSDC variable-rate test loan on Morpho against ${fmt(TEST_LOAN.collateral, 18, 2)} BTC, then switch it here. It takes up to three wallet confirmations.`
               : `To try a switch, open a small test loan against ${fmt(TEST_LOAN.collateral, 18, 2)} BTC. This wallet has ${fmt(snap.wallet.btc, 18, 4)} BTC. Get testnet BTC from the Mezo faucet, then come back.`,
-          actions: readOnly
+          actions: IS_MAINNET
+            ? `<a class="btn btn-primary" href="${MAINNET_SAMPLE_HREF}">See a mainnet loan</a><a class="btn btn-secondary" href="/app/">Try it on testnet</a>`
+            : readOnly
             ? `<a class="btn btn-primary" href="/app/">Use your own wallet</a>`
             : snap.wallet.btc >= TEST_LOAN.collateral + 10n ** 15n
               ? `<button class="btn btn-primary" id="test-loan" type="button">Open a test loan</button>`
@@ -596,7 +608,7 @@ function body(): string {
         })
       : "";
   const revokeRow =
-    !readOnly && snap.authorized && phase.kind !== "busy"
+    !readOnly && ROUTER_LIVE && snap.authorized && phase.kind !== "busy"
       ? `<section class="revoke">
           <div>
             <h2>Debt Switch can still manage your Morpho loan</h2>
@@ -621,7 +633,7 @@ function renderNavState() {
   if (mine) {
     html = readOnly
       ? `<a class="btn btn-secondary nav-addr" href="/app/" title="Back to your own loan">${short(mine)}</a>`
-      : `<a class="btn btn-secondary nav-addr" href="${addrUrl(mine)}" ${ext} title="Connected on Mezo Testnet">${short(mine)}</a>
+      : `<a class="btn btn-secondary nav-addr" href="${addrUrl(mine)}" ${ext} title="Connected on ${NET}">${short(mine)}</a>
         <button class="btn btn-secondary nav-disconnect" type="button" data-disconnect aria-label="Disconnect wallet"><span class="nav-disconnect-label">Disconnect</span><svg class="nav-disconnect-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg></button>`;
   } else if (window.ethereum) {
     html = `<button class="btn btn-primary" type="button" data-connect>Connect wallet</button>`;
@@ -634,8 +646,12 @@ function renderNavState() {
 function render() {
   app.innerHTML = `
     <header class="app-head">
+      <nav class="net-toggle" aria-label="Network">
+        <a href="/app/" ${IS_MAINNET ? "" : 'aria-current="page"'}>Testnet<span>Switch for real</span></a>
+        <a href="/app/?network=mainnet" ${IS_MAINNET ? 'aria-current="page"' : ""}>Mainnet<span>Real loans, preview</span></a>
+      </nav>
       <h1>Switch your loan</h1>
-      <p>Move a Morpho loan to a fixed-rate MUSD loan in one transaction.</p>
+      <p>${IS_MAINNET ? "See what switching a real Mezo mainnet Morpho loan to a fixed-rate MUSD loan would look like, priced live." : "Move a Morpho loan to a fixed-rate MUSD loan in one transaction."}</p>
       ${headerNote()}
     </header>
     <main class="app-main">${body()}</main>`;

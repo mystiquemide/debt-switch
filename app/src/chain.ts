@@ -6,7 +6,8 @@ import {
   type Address,
   type Hex,
 } from "viem";
-import deployments from "../../deployments/31611.json";
+import testnetDeployments from "../../deployments/31611.json";
+import mainnetDeployments from "../../deployments/31612.json";
 
 export const mezoTestnet = defineChain({
   id: 31611,
@@ -18,7 +19,26 @@ export const mezoTestnet = defineChain({
   testnet: true,
 });
 
-export const publicClient = createPublicClient({ chain: mezoTestnet, transport: http() });
+export const mezoMainnet = defineChain({
+  id: 31612,
+  name: "Mezo",
+  nativeCurrency: { name: "Bitcoin", symbol: "BTC", decimals: 18 },
+  rpcUrls: { default: { http: ["https://mainnet.mezo.public.validationcloud.io"] } },
+  blockExplorers: { default: { name: "Mezo Explorer", url: "https://explorer.mezo.org" } },
+  contracts: { multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" } },
+});
+
+export type Network = "testnet" | "mainnet";
+/** Chosen with ?network=mainnet. Testnet is the default because that's where the router is deployed. */
+export const NETWORK: Network = new URLSearchParams(location.search).get("network") === "mainnet" ? "mainnet" : "testnet";
+export const IS_MAINNET = NETWORK === "mainnet";
+/** The chain the app is pointed at. */
+export const activeChain = IS_MAINNET ? mezoMainnet : mezoTestnet;
+const deployments = IS_MAINNET ? mainnetDeployments : testnetDeployments;
+/** False on mainnet until the router is deployed there: the app reads and previews, but can't send a switch. */
+export const ROUTER_LIVE = /^0x0+$/.test(deployments.debtSwitchRouter) === false;
+
+export const publicClient = createPublicClient({ chain: activeChain, transport: http() });
 
 const d = deployments;
 export const ADDR = {
@@ -256,6 +276,11 @@ export async function buildPreview(s: Snapshot): Promise<Preview> {
     troveDebt = (troveDebt * need) / (out === 0n ? 1n : out) + 10n ** 18n;
     out = await quote(troveDebt);
   }
+  if ((out * (10000n - SLIPPAGE_BPS)) / 10000n < owed) {
+    // The pool can't cover this loan at any size. Show the trove at the loan's own size, not the runaway estimate.
+    troveDebt = owed * 10n ** 12n > floorDebt ? owed * 10n ** 12n : floorDebt;
+    out = await quote(troveDebt);
+  }
   const minMusdcOut = (out * (10000n - SLIPPAGE_BPS)) / 10000n;
   if (minMusdcOut < owed) blocks.push("Mezo Pools doesn't have enough mUSDC right now to repay a loan this size. Try a smaller loan, or try again later.");
 
@@ -296,7 +321,7 @@ export const OPEN_TROVE_TYPES = {
 export const OPEN_TROVE_DOMAIN = {
   name: "BorrowerOperationsSignatures",
   version: "1",
-  chainId: mezoTestnet.id,
+  chainId: activeChain.id,
   verifyingContract: ADDR.troveSigs,
 } as const;
 
@@ -314,5 +339,5 @@ export function fmt(x: bigint, decimals: number, dp = 2) {
   return `${neg ? "-" : ""}${w}${dp > 0 ? "." + frac : ""}`;
 }
 
-export const txUrl = (h: Hex) => `${mezoTestnet.blockExplorers.default.url}/tx/${h}`;
-export const addrUrl = (a: Address) => `${mezoTestnet.blockExplorers.default.url}/address/${a}`;
+export const txUrl = (h: Hex) => `${activeChain.blockExplorers.default.url}/tx/${h}`;
+export const addrUrl = (a: Address) => `${activeChain.blockExplorers.default.url}/address/${a}`;

@@ -64,6 +64,10 @@ cast call 0xe1a26db653708A2AD8F824E92Db9852410e33A59 "balanceOf(address)(uint256
 
 Get about 0.05 testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org), connect a wallet on Mezo Testnet at **https://debtswitch.midelabs.xyz/app/** and press **Open a test loan**. It approves your BTC, adds 0.04 BTC as Morpho collateral and borrows 100 mUSDC, up to three confirmations. The app then shows the switch preview. Press **Switch to fixed rate** and check the result the same way as step 1.
 
+### Mainnet
+
+The app has a **Testnet / Mainnet** switch. Mainnet reads real loans on Mezo's own Morpho BTC/mUSDC market and prices the switch from the live mainnet pool, for example **https://debtswitch.midelabs.xyz/app/?network=mainnet&address=0x965c18b6ac7d233c00c93c7c0039bef6a6035d26**. Sending a mainnet switch is off until an audit. `test/MainnetFork.t.sol` runs both switches against those mainnet contracts on a fork.
+
 ## 3. The refusals (1 minute)
 
 | Case | Transaction | Expected |

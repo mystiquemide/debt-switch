@@ -5,13 +5,14 @@
 ### Switch a Bitcoin loan on Mezo between variable mUSDC and fixed MUSD in one transaction, without repaying first.
 
 [![Live app](https://img.shields.io/badge/live%20app-debtswitch.midelabs.xyz-f7931a)](https://debtswitch.midelabs.xyz)
-[![Network](https://img.shields.io/badge/Mezo%20Testnet-31611-1f2937)](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7)
+[![Mainnet](https://img.shields.io/badge/Mezo%20mainnet-fork%20tested-1f2937)](test/MainnetFork.t.sol)
+[![Testnet](https://img.shields.io/badge/Mezo%20Testnet-live-1f2937)](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7)
 [![Track](https://img.shields.io/badge/Mezo%20Buildathon-Track%201%3A%20DeFi-7c3aed)](#tracks)
 [![CI](https://github.com/mystiquemide/debt-switch/actions/workflows/ci.yml/badge.svg)](https://github.com/mystiquemide/debt-switch/actions/workflows/ci.yml)
 [![Contracts](https://img.shields.io/badge/contracts-source%20verified-3ccf8e)](#contracts)
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 
-**[Live app](https://debtswitch.midelabs.xyz)** · **[See a switched loan, no wallet needed](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)** · **[Judge guide](JUDGE.md)** · **[Deck](docs/Debt-Switch-deck.pdf)** · **[The switch on the explorer](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5)** · **[Router contract](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract)**
+**[Live app](https://debtswitch.midelabs.xyz)** · **[See a switched loan, no wallet needed](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)** · **[Preview a real mainnet loan](https://debtswitch.midelabs.xyz/app/?network=mainnet&address=0x965c18b6ac7d233c00c93c7c0039bef6a6035d26)** · **[Judge guide](JUDGE.md)** · **[Deck](docs/Debt-Switch-deck.pdf)** · **[The switch on the explorer](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5)** · **[Router contract](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract)**
 
 </div>
 
@@ -82,7 +83,8 @@ The full walkthrough with expected results is in **[JUDGE.md](JUDGE.md)**. The s
 2. Open **[the demo borrower in the app](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)**. No wallet needed. It reads that wallet's Morpho position and trove live from chain and explains the switch. With your own wallet on Mezo Testnet, [the app](https://debtswitch.midelabs.xyz) reads your positions the same way.
 3. Check the refusals on chain: a [below-floor attempt](https://explorer.test.mezo.org/tx/0xaf9e00b1c6f240869b02960e8a8bb5314a41b35a3aeab391331c7091a7f1e027) and a [wrong-caller attempt](https://explorer.test.mezo.org/tx/0xc3d1628ca463dd13b0e4d293d32fc449d519897ac50ac14b7a0e2a68a88b45c8), both reverted.
 4. Read the [verified router source](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract), the deployed version with the Morpho-to-MUSD direction.
-5. Switch a loan yourself. Get about 0.05 testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org), connect in [the app](https://debtswitch.midelabs.xyz/app/) and press **Open a test loan**. It borrows 100 mUSDC on Morpho against 0.04 BTC, then the app offers the switch.
+5. Open **[a real Mezo mainnet Morpho loan in the app](https://debtswitch.midelabs.xyz/app/?network=mainnet&address=0x965c18b6ac7d233c00c93c7c0039bef6a6035d26)**. The **Mainnet** tab reads Mezo's own Morpho market and prices the switch from the live mainnet pool. Sending stays off until the audit. Both switches already pass on a mainnet fork (`forge test --match-contract MainnetForkTest`).
+6. Switch a loan yourself. Get about 0.05 testnet BTC from the [Mezo faucet](https://faucet.test.mezo.org), connect in [the app](https://debtswitch.midelabs.xyz/app/) and press **Open a test loan**. It borrows 100 mUSDC on Morpho against 0.04 BTC, then the app offers the switch.
 
 ## Tracks
 

@@ -1,0 +1,24 @@
+{
+  "chainId": 31612,
+  "note": "Mezo mainnet. Morpho Blue and its BTC/mUSDC market are Mezo's own. The router isn't deployed here yet: both switches pass on a mainnet fork (test/MainnetFork.t.sol).",
+  "debtSwitchRouter": "0x0000000000000000000000000000000000000000",
+  "morpho": "0x565834cE7E40b8987BC20EbF83E2159467bDA311",
+  "irm": "0x3760Ebc636F912a4dB9540fdA4Dec09C25C6C1e7",
+  "oracle": "0xeA0597D3d44FF2ea1E4c35501e153f4C025e48d1",
+  "lltv": "860000000000000000",
+  "marketId": "0x6f88e79e8acb3a3ac2f990dcfb83b42ddae96ef406cd735f1721b2a2e1b733db",
+  "mezo": {
+    "btc": "0x7b7C000000000000000000000000000000000000",
+    "musd": "0xdD468A1DDc392dcdbEf6db6e34E89AA338F9F186",
+    "musdc": "0x04671C72Aab5AC02A03c1098314b1BB6B560c197",
+    "borrowerOperations": "0x44b1bac67dDA612a41a58AAf779143B181dEe031",
+    "borrowerOperationsSignatures": "0xB57ab578BF20b3e318f3EFAA587C51DBccE5df7a",
+    "troveManager": "0x94AfB503dBca74aC3E4929BACEeDfCe19B93c193",
+    "priceFeed": "0xc5aC5A8892230E0A3e1c473881A2de7353fFcA88",
+    "sortedTroves": "0x8C5DB4C62BF29c1C4564390d10c20a47E0b2749f",
+    "poolRouter": "0x16A76d3cd3C1e3CE843C6680d6B37E9116b5C706",
+    "poolFactory": "0x83FE469C636C4081b87bA5b3Ae9991c6Ed104248",
+    "musdMusdcPool": "0xEd812AEc0Fecc8fD882Ac3eccC43f3aA80A6c356",
+    "hintHelpers": "0x0000000000000000000000000000000000000000"
+  }
+}

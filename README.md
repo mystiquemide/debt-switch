@@ -11,15 +11,37 @@
 [![Contracts](https://img.shields.io/badge/contracts-source%20verified-3ccf8e)](#contracts)
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 
-**[Live app](https://debtswitch.midelabs.xyz)** · **[Judge guide](JUDGE.md)** · **[The switch on the explorer](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5)** · **[Router contract](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract)**
+**[Live app](https://debtswitch.midelabs.xyz)** · **[See a switched loan, no wallet needed](https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)** · **[Judge guide](JUDGE.md)** · **[Deck](docs/Debt-Switch-deck.pdf)** · **[The switch on the explorer](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5)** · **[Router contract](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract)**
 
 </div>
 
 ---
 
+## At a glance
+
+**Who it's for, on Mezo mainnet today.** Read directly from Mezo mainnet at block 13,240,656 (Nov 15, 2026, 07:57 UTC):
+
+| Mezo mainnet | Value |
+|---|---|
+| Morpho BTC/mUSDC market, borrowed | **42,107 mUSDC** of 55,923 supplied (75% utilised) |
+| Its variable borrow rate | **2.23% APY** |
+| MUSD trove fixed rate | **1.00%** |
+| Active BTC/mUSDC borrowers | 7, of whom **2 owe more than the 1,800 MUSD trove minimum**. Those 2 hold 42,100 mUSDC, 99.98% of the market's debt (39,881 and 2,219). |
+| MUSD troves | 4, with 28,310 MUSD of debt |
+| MUSD/mUSDC pool depth | About **4,620 mUSDC** against 6,173 MUSD |
+
+The demand is real but concentrated. Almost all of the market's debt sits above the trove minimum and pays 2.23% variable against MUSD's 1.00% fixed. What limits switching on mainnet today is the depth of the MUSD/mUSDC pool, not the contract. 2,000 MUSD swaps at 0.92 mUSDC per MUSD, and 6,000 MUSD at 0.61, so only switches of a few thousand mUSDC clear today. Moving the 39,881 mUSDC position needs a deeper MUSD/mUSDC pool or routing across several pools ([milestones](#future-milestones)). Every switch that clears pulls Morpho debt into MUSD. Reproduce these numbers with [`script/mainnet-market-stats.sh`](script/mainnet-market-stats.sh).
+
+**What the demo shows.** On testnet, a borrower with a 300 mUSDC Morpho loan and no stablecoins switched into a 1.00% fixed MUSD trove [in one transaction](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5?tab=token_transfers). Two testnet facts shape the numbers:
+
+- **Mezo's 1,800 MUSD minimum.** A 300 mUSDC loan can't become a 300 MUSD trove, so the trove was sized to the minimum (2,000 MUSD including Mezo's 200 MUSD liquidation reserve) and the extra 1,139.25 mUSDC went back to the borrower. A loan above 1,800 switches at its own size.
+- **An unbalanced testnet pool.** The testnet MUSD/mUSDC pool pays about 0.80 mUSDC per MUSD, so the swap cost about 359 mUSDC more than a balanced pool would.
+
+---
+
 ## Contents
 
-[The problem](#the-problem) · [The solution](#the-solution) · [Judge path](#judge-path) · [Tracks](#tracks) · [How it works](#how-it-works) · [Mezo integration](#mezo-integration-what-is-load-bearing) · [Screens](#screens) · [Proof](#proof-on-mezo-testnet) · [Security](#security) · [What we built](#what-we-built) · [Built with](#built-with) · [Submission details](#submission-details) · [Judging criteria](#how-debt-switch-maps-to-the-judging-criteria) · [Run it](#run-it-locally) · [Limits](#limits) · [About](#about)
+[At a glance](#at-a-glance) · [The problem](#the-problem) · [The solution](#the-solution) · [Judge path](#judge-path) · [Tracks](#tracks) · [How it works](#how-it-works) · [Mezo integration](#mezo-integration-what-is-load-bearing) · [Screens](#screens) · [Proof](#proof-on-mezo-testnet) · [Security](#security) · [What we built](#what-we-built) · [Built with](#built-with) · [Submission details](#submission-details) · [Judging criteria](#how-debt-switch-maps-to-the-judging-criteria) · [Run it](#run-it-locally) · [Limits](#limits) · [About](#about)
 
 ---
 
@@ -57,7 +79,7 @@ Debt Switch moves a whole loan from Morpho mUSDC into an MUSD trove in **one ato
 The full walkthrough with expected results is in **[JUDGE.md](JUDGE.md)**. The short version, about 3 minutes:
 
 1. Open **[the switch transaction](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5?tab=token_transfers)** and read the token transfers top to bottom. That one transaction shows the flash loan, the Morpho repayment, the BTC moving, MUSD minted by Mezo, the swap, the flash loan repaid and the refund.
-2. Open **[debtswitch.midelabs.xyz](https://debtswitch.midelabs.xyz)** with a wallet on Mezo Testnet and connect. It reads your Morpho position and your trove live from chain.
+2. Open **[the demo borrower in the app](https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)**. No wallet needed. It reads that wallet's Morpho position and trove live from chain and explains the switch. With your own wallet on Mezo Testnet, [the app](https://debtswitch.midelabs.xyz) reads your positions the same way.
 3. Check the refusals on chain: a [below-floor attempt](https://explorer.test.mezo.org/tx/0xaf9e00b1c6f240869b02960e8a8bb5314a41b35a3aeab391331c7091a7f1e027) and a [wrong-caller attempt](https://explorer.test.mezo.org/tx/0xc3d1628ca463dd13b0e4d293d32fc449d519897ac50ac14b7a0e2a68a88b45c8), both reverted.
 4. Read the [verified router source](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract), 172 lines.
 
@@ -136,7 +158,13 @@ Full addresses are in [`deployments/31611.json`](deployments/31611.json).
 
 The app opens on a single action. It works with any injected browser wallet (MetaMask, Rabby). There is no account system and no backend.
 
-### 2. After the switch
+### 2. Read-only view, no wallet needed
+
+![Debt Switch read-only view of the demo borrower, with an explanation of the switch](docs/screenshots/5-readonly-demo.png)
+
+Add `?address=` and any testnet address to the app URL to see that wallet's live positions without connecting. [This link](https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4) opens the demo borrower. The orange card explains how Mezo's 1,800 MUSD minimum and the unbalanced testnet pool shaped the switch. Below it, the trove card shows the live result from Mezo's TroveManager. The connect screen links here, so anyone can see the product working without a funded wallet.
+
+### 3. After the switch, in the borrower's own wallet
 
 ![Debt Switch after a switch: Morpho position closed, MUSD trove open at 1.00% fixed, 1,139.24 mUSDC refunded](docs/screenshots/2-switched.png)
 
@@ -148,9 +176,9 @@ This is the real demo borrower `0x5c64...67B4` right after switching through the
 - **Summary line:** the BTC price comes live from Mezo's PriceFeed. The wallet holds the 1,139.24 mUSDC refund and 0 MUSD.
 - **Revoke card:** the app reminds the user that the router still holds Morpho permission and offers a one-click revoke. We used it: [revoke tx](https://explorer.test.mezo.org/tx/0xdc4a1b45dfec0e4a24eea00064e255898d9603464c2eed17408b9af736adce2b).
 
-Before the switch, the same screen shows a preview card built entirely from chain reads: the Morpho debt to repay, the BTC to move, the new trove debt, the issuance fee, the 200 MUSD reserve, the fixed rate, the live swap quote with your slippage minimum, the expected refund, the new collateral ratio, the liquidation price, and a note when the 1,800 MUSD floor sizes the trove. If the switch would fail, the preview lists the reason and the button stays disabled.
+Before the switch, the same screen shows a preview card built entirely from chain reads: the Morpho debt to repay, the BTC to move, the new trove debt, the issuance fee, the 200 MUSD reserve, the fixed rate, the live swap quote with your slippage minimum, the expected refund, the new collateral ratio, the liquidation price, a note when the 1,800 MUSD floor sizes the trove, and a note with the pool's live rate when it's far from 1:1. If the switch would fail, the preview lists the reason and the button stays disabled.
 
-### 3. The switch on the explorer
+### 4. The switch on the explorer
 
 ![Mezo testnet explorer, token transfers for the switch transaction](docs/screenshots/3-explorer-transfers.png)
 
@@ -166,7 +194,7 @@ The token transfers of [the switch transaction](https://explorer.test.mezo.org/t
 8. **300.000133 mUSDC, router to Morpho.** The flash loan repaid.
 9. **1,139.246954 mUSDC, router to the borrower.** The refund. The router is left with nothing.
 
-### 4. Wrong network guard
+### 5. Wrong network guard
 
 ![Debt Switch asking to switch to Mezo Testnet](docs/screenshots/4-wrong-network.png)
 
@@ -291,33 +319,34 @@ All four of our contracts are source-verified on the Mezo testnet explorer.
 | Category | Borrowing, debt refinancing |
 | TL;DR | Switch a Bitcoin loan on Mezo from variable Morpho mUSDC to a fixed-rate MUSD trove in one transaction, without repaying first. |
 | How it works | A Morpho flash loan repays the borrower's mUSDC debt, their BTC opens an MUSD trove in their name through Mezo's `openTroveWithSignature`, and the new MUSD is swapped on Mezo Pools to repay the flash loan, all atomically. MUSD is the destination debt, minted by Mezo inside the switch. See [How it works](#how-it-works). |
-| Target group | Bitcoin holders who already borrow on Mezo and want the other product's terms: fixed-rate certainty, or the 90% liquidation threshold instead of 86%. Experienced DeFi users on desktop with a browser wallet. Global. |
+| Target group | Bitcoin holders who already borrow on Mezo and want the other product's terms: fixed-rate certainty, or the 90% liquidation threshold instead of 86%. On mainnet today that's the Morpho BTC/mUSDC market, where 2 borrowers above the 1,800 MUSD minimum hold 42,100 mUSDC at 2.23% variable. Switch size on mainnet is limited by MUSD/mUSDC pool depth. Experienced DeFi users on desktop with a browser wallet. Global. |
 | Track | Track 1: DeFi (Borrowing, Lending, Looping, and Yield) |
 | Chain | Mezo Testnet (31611) |
 | Project status | Entirely new, built during Wave 2 |
-| Readiness | Testnet deployment, live app at [debtswitch.midelabs.xyz](https://debtswitch.midelabs.xyz) |
+| Readiness | Testnet deployment, live app at [debtswitch.midelabs.xyz](https://debtswitch.midelabs.xyz), with a [read-only demo view](https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4) |
 | Live link | https://debtswitch.midelabs.xyz |
 | Repository | https://github.com/mystiquemide/debt-switch |
+| Deck | [docs/Debt-Switch-deck.pdf](docs/Debt-Switch-deck.pdf) |
 | Tech stack | Solidity, Foundry, Morpho Blue, viem, TypeScript, Vite, Playwright, Docker. See [Built with](#built-with). |
-| Team | MystiqueMide, solo builder: contracts, app, testing and deployment |
+| Team | MystiqueMide, founder. Built everything: product, contracts, app, testing and deployment. |
 
 ### Future milestones
 
 | Milestone | What ships | Target |
 |---|---|---|
-| 1. Reverse switch | `troveToMorpho`: close a trove with `closeTroveWithSignature` and move the BTC into Morpho, with the same atomic guarantees | December 2026 |
-| 2. Partial switches | Move part of a position, kept above Mezo's 1,800 MUSD floor on both sides | January 2027 |
-| 3. Mainnet | Audit, then deploy against Mezo's own mainnet Morpho mUSDC market | Q1 2027 |
+| 1. Multi-pool routing | Route the MUSD-to-mUSDC leg across several Mezo pools (MUSD/mUSDC, MUSD/mUSDT, MUSD/BTC) so larger loans clear mainnet liquidity | December 2026 |
+| 2. Reverse switch | `troveToMorpho`: close a trove with `closeTroveWithSignature` and move the BTC into Morpho, with the same atomic guarantees | January 2027 |
+| 3. Mainnet | Audit, then deploy against Mezo's own mainnet Morpho BTC/mUSDC market (`0x6f88e79e...33db` on Morpho `0x5658...a311`), with partial switches | Q1 2027 |
 
 ## How Debt Switch maps to the judging criteria
 
 | Criterion | Weight | Where to look |
 |---|---|---|
 | Mezo Integration | 30% | MUSD is minted inside the switch through Mezo's own `openTroveWithSignature`, sized by `minNetDebt` and `getBorrowingFee`, priced by Mezo's PriceFeed, inserted with HintHelpers, and settled through Mezo Pools. See [Mezo integration](#mezo-integration-what-is-load-bearing). |
-| Product & Business Viability | 30% | It answers the Track 1 question directly: it adds a route from existing variable-rate debt into MUSD, using only Mezo's existing products. See [The problem](#the-problem). |
+| Product & Business Viability | 30% | It answers the Track 1 question directly: it adds a route from existing variable-rate debt into MUSD, using only Mezo's existing products. On mainnet, 99.98% of the Morpho BTC/mUSDC market's debt sits above the trove minimum and pays 2.23% variable against 1.00% fixed. Pool depth caps switch size today, and that's addressed in the milestones. See [At a glance](#at-a-glance). |
 | Technical Implementation | 20% | An immutable, atomic router with zero retained balances. Fork tests against live Mezo contracts, on-chain refusals, source-verified contracts. See [Security](#security). |
-| User Experience | 10% | One approval, one signature, one transaction. A live preview with block reasons, decoded errors, a network guard and one-click revoke. See [Screens](#screens). |
-| Submission Materials | 10% | This README, [JUDGE.md](JUDGE.md), the live app and the pitch video. |
+| User Experience | 10% | One approval, one signature, one transaction. A live preview with block reasons, decoded errors, a network guard, one-click revoke, and a read-only view anyone can open without a wallet. See [Screens](#screens). |
+| Submission Materials | 10% | This README, [JUDGE.md](JUDGE.md), the [deck](docs/Debt-Switch-deck.pdf), the live app and the pitch video. |
 
 ## Run it locally
 
@@ -344,16 +373,16 @@ docs/         screenshots
 
 - **Unaudited.** Tests and live testnet runs aren't an audit. Don't use this with real funds.
 - **Testnet only.** The Morpho Blue instance is ours. Mezo testnet has no official Morpho deployment.
-- **One direction.** Morpho to MUSD is live. MUSD to Morpho is milestone 1.
-- **Whole positions only.** Partial switches are milestone 2.
+- **One direction.** Morpho to MUSD is live. MUSD to Morpho is milestone 2.
+- **Whole positions only.** Partial switches come with mainnet (milestone 3).
 - **The 1,800 MUSD floor.** Morpho loans under the floor become an 1,800 MUSD trove, and the extra comes back as mUSDC.
-- **Testnet pool skew.** The testnet MUSD/mUSDC pool trades around 0.80 mUSDC per MUSD, so testnet swaps cost more than they would on mainnet.
+- **Pool depth.** The testnet MUSD/mUSDC pool trades around 0.80 mUSDC per MUSD. The mainnet pool holds about 4,620 mUSDC, so mainnet switches above a few thousand mUSDC need multi-pool routing (milestone 1).
 - **Two refusals are proven in tests only.** Slippage and signature replay haven't been sent on chain. That needs a fresh 0.045 BTC Morpho position, and the testnet faucet limited us to 0.05 BTC.
 - **Morpho permission.** The router's Morpho permission stays on until you revoke it. The app offers the revoke right after a switch.
 
 ## About
 
-Debt Switch was built by **MystiqueMide** for Wave 2 of the Mezo Buildathon on AKINDO.
+Debt Switch was founded and built end to end by **MystiqueMide** for Wave 2 of the Mezo Buildathon on AKINDO.
 
 The idea came from looking at Mezo's two borrowing products side by side. Both take the same BTC, but nothing connects them, so the only way across is to repay in full. Morpho's free flash loans and Mezo's signed trove delegation made it possible to bridge them in one transaction without the router ever owning anyone's position.
 

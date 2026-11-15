@@ -4,6 +4,8 @@ import {
   UserRejectedRequestError,
   createWalletClient,
   custom,
+  getAddress,
+  isAddress,
   numberToHex,
   type Address,
   type EIP1193Provider,
@@ -54,6 +56,13 @@ let wallet: WalletClient | undefined;
 let account: Address | undefined;
 let snap: Snapshot | undefined;
 let preview: Preview | undefined;
+/** Read-only view of any address via ?address=0x..., no wallet needed. */
+let readOnly = false;
+
+// The demo borrower whose Morpho loan was switched live on testnet through this app.
+const DEMO_BORROWER = "0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4" as Address;
+const DEMO_SWITCH_TX = "0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5" as Hex;
+const demoLink = `<p class="small"><a href="?address=${DEMO_BORROWER}">See a real switched loan on testnet, no wallet needed</a></p>`;
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -90,6 +99,8 @@ function decodeError(e: unknown): string {
 
 async function connect() {
   if (!window.ethereum) return;
+  readOnly = false;
+  if (location.search) history.replaceState(null, "", location.pathname);
   try {
     wallet = createWalletClient({ chain: mezoTestnet, transport: custom(window.ethereum) });
     [account] = await wallet.requestAddresses();
@@ -315,8 +326,17 @@ function previewCard(s: Snapshot, p: Preview) {
           ? `<p class="note">Mezo troves need at least ${fmt(s.minNetDebt, 18, 0)} MUSD of net debt, so the trove is sized to the minimum and the extra comes back to you as mUSDC.</p>`
           : ""
       }
+      ${
+        p.troveDebt > 0n && (p.swapOut * 10n ** 12n * 100n) / p.troveDebt < 97n
+          ? `<p class="note">The MUSD/mUSDC pool is paying ${(Number((p.swapOut * 10n ** 12n * 10000n) / p.troveDebt) / 10000).toFixed(4)} mUSDC per MUSD right now, so the swap costs more than it would at 1:1. The testnet pool is unbalanced.</p>`
+          : ""
+      }
       ${blocked ? `<ul class="blocks">${p.blocks.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
-      <button id="switch" ${blocked || busy ? "disabled" : ""}>${s.authorized ? "Sign and switch" : "Approve, sign and switch"}</button>
+      ${
+        readOnly
+          ? `<p class="note">Read-only view. Connect this wallet to switch it.</p>`
+          : `<button id="switch" ${blocked || busy ? "disabled" : ""}>${s.authorized ? "Sign and switch" : "Approve, sign and switch"}</button>`
+      }
       <p class="muted small">One Morpho approval, one signature, one transaction. If any step fails, the whole switch reverts.</p>
     </section>`;
 }
@@ -342,9 +362,9 @@ function status() {
 function body(): string {
   switch (phase.kind) {
     case "no-wallet":
-      return `<section class="card center"><p>No browser wallet found. Install MetaMask or Rabby to use Debt Switch.</p></section>`;
+      return `<section class="card center"><p>No browser wallet found. Install MetaMask or Rabby to use Debt Switch.</p>${demoLink}</section>`;
     case "disconnected":
-      return `<section class="card center"><p>Connect the wallet that holds your Mezo testnet loan.</p><button id="connect">Connect wallet</button></section>`;
+      return `<section class="card center"><p>Connect the wallet that holds your Mezo testnet loan.</p><button id="connect">Connect wallet</button>${demoLink}</section>`;
     case "wrong-network":
       return `<section class="card center"><p>Your wallet is on chain ${phase.chainId}. Debt Switch runs on Mezo Testnet (31611).</p><button id="network">Switch to Mezo Testnet</button></section>`;
     case "reading":
@@ -358,12 +378,20 @@ function body(): string {
     !hasMorpho && snap.trove.status !== 1
       ? `<section class="card center"><p>This wallet has no Morpho mUSDC loan or MUSD trove on Mezo testnet.</p><p><a href="https://mezo.org" target="_blank" rel="noopener">Open a loan on Mezo</a></p></section>`
       : "";
-  const revokeRow = snap.authorized
+  const demoNote =
+    readOnly && account?.toLowerCase() === DEMO_BORROWER.toLowerCase()
+      ? `<section class="card demo">
+          <h3>What happened to this loan</h3>
+          <p>This wallet had a 300 mUSDC variable-rate loan on Morpho against 0.04 BTC, and no stablecoins. It switched to a fixed 1.00% MUSD trove through this app in <a href="${txUrl(DEMO_SWITCH_TX)}" target="_blank" rel="noopener">one transaction</a>.</p>
+          <p>Mezo troves need at least 1,800 MUSD of net debt, so the 300 mUSDC loan became a 2,000 MUSD trove (1,800 plus Mezo's 200 MUSD liquidation reserve). The extra came back to the wallet as 1,139.25 mUSDC. The testnet MUSD/mUSDC pool pays about 0.80 mUSDC per MUSD, so the swap cost about 359 mUSDC more than a 1:1 pool would. A loan above 1,800 MUSD is switched at its own size.</p>
+        </section>`
+      : "";
+  const revokeRow = !readOnly && snap.authorized
     ? `<section class="card revoke"><p>Debt Switch is still approved to manage your Morpho position. Nothing uses it between switches, but you can revoke it.</p><button id="revoke" class="secondary" ${
         phase.kind === "busy" ? "disabled" : ""
       }>Revoke approval</button></section>`
     : "";
-  return `${status()}${positionCards(snap)}${empty}${hasMorpho && preview ? previewCard(snap, preview) : ""}${revokeRow}`;
+  return `${status()}${demoNote}${positionCards(snap)}${empty}${hasMorpho && preview ? previewCard(snap, preview) : ""}${revokeRow}`;
 }
 
 function render() {
@@ -371,7 +399,15 @@ function render() {
     <header>
       <h1>Debt Switch</h1>
       <p class="tag">Move a Bitcoin loan between Mezo's variable mUSDC and fixed MUSD in one transaction, without repaying first.</p>
-      ${account ? `<p class="acct">Connected <a href="${addrUrl(account)}" target="_blank" rel="noopener">${short(account)}</a> on Mezo Testnet</p>` : ""}
+      ${
+        account
+          ? readOnly
+            ? `<p class="acct">Viewing <a href="${addrUrl(account)}" target="_blank" rel="noopener">${short(account)}</a> on Mezo Testnet, read-only. ${
+                window.ethereum ? `<button id="connect" class="link">Connect your own wallet</button>` : ""
+              }</p>`
+            : `<p class="acct">Connected <a href="${addrUrl(account)}" target="_blank" rel="noopener">${short(account)}</a> on Mezo Testnet</p>`
+          : ""
+      }
     </header>
     <main>${body()}</main>
     <footer class="muted small">
@@ -381,12 +417,13 @@ function render() {
     </footer>`;
   document.querySelector("#connect")?.addEventListener("click", connect);
   document.querySelector("#network")?.addEventListener("click", switchNetwork);
-  document.querySelector("#retry")?.addEventListener("click", () => (wallet ? checkNetworkAndRead() : connect()));
+  document.querySelector("#retry")?.addEventListener("click", () => (readOnly ? refresh() : wallet ? checkNetworkAndRead() : connect()));
   document.querySelector("#switch")?.addEventListener("click", runSwitch);
   document.querySelector("#revoke")?.addEventListener("click", revoke);
 }
 
 window.ethereum?.on?.("accountsChanged", (accs: Address[]) => {
+  if (readOnly) return;
   account = accs[0];
   if (account) checkNetworkAndRead();
   else {
@@ -395,6 +432,15 @@ window.ethereum?.on?.("accountsChanged", (accs: Address[]) => {
     render();
   }
 });
-window.ethereum?.on?.("chainChanged", () => checkNetworkAndRead());
+window.ethereum?.on?.("chainChanged", () => {
+  if (!readOnly) checkNetworkAndRead();
+});
 
-render();
+const viewAddress = new URLSearchParams(location.search).get("address");
+if (viewAddress && isAddress(viewAddress)) {
+  readOnly = true;
+  account = getAddress(viewAddress);
+  refresh();
+} else {
+  render();
+}

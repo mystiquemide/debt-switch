@@ -161,15 +161,21 @@ Full addresses are in [`deployments/31611.json`](deployments/31611.json).
 
 ![Debt Switch app, Connect your wallet screen, with Connect wallet and See a real switched loan buttons](docs/screenshots/1-connect.jpg)
 
-The app at `/app` opens on one action. Its nav holds only app links (Switch, Demo loan, Explorer) and the wallet button. Connecting only lets the app read your loans, and nothing moves until you sign. It works with any injected browser wallet (MetaMask, Rabby), with no account system and no backend. If your wallet is already connected, the app reconnects on load without asking again.
+The app at `/app` opens with a **Testnet / Mainnet** switch and one action. Its nav holds only app links (Switch, Demo loan, Explorer) and the wallet button. Connecting only lets the app read your loans, and nothing moves until you sign. It works with any injected browser wallet (MetaMask, Rabby), with no account system and no backend. If your wallet is already connected, the app reconnects on load without asking again.
 
-### 2. Read-only view, no wallet needed
+### 2. Mainnet: a real loan, priced live
+
+![Debt Switch Mainnet tab showing a real Mezo mainnet Morpho loan of 2,218.87 mUSDC and the switch preview priced from the live mainnet pool](docs/screenshots/6-mainnet-preview.jpg)
+
+The **Mainnet** tab reads Mezo mainnet: Mezo's own Morpho BTC/mUSDC market, TroveManager, PriceFeed and the MUSD/mUSDC pool. [This link](https://debtswitch.midelabs.xyz/app/?network=mainnet&address=0x965c18b6ac7d233c00c93c7c0039bef6a6035d26) opens a real mainnet borrower who owes 2,218.87 mUSDC. The preview sizes the trove and prices the swap at the live mainnet rate. It also refuses this loan with the reason: its 0.045 BTC would back the new trove at 107.3%, below Mezo's 110%. Sending stays off on mainnet until the audit.
+
+### 3. Read-only view, no wallet needed
 
 ![Debt Switch read-only view of the demo borrower: a Read-only label, a marigold card explaining the switch, and the live loan cards](docs/screenshots/5-readonly-demo.jpg)
 
 Add `?address=` and any testnet address to the app URL to see that wallet's live positions without connecting. [This link](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4) opens the demo borrower. A marigold "Read-only" label marks the view. The marigold card explains how Mezo's 1,800 MUSD minimum and the unbalanced testnet pool shaped the switch. Below it, the loan cards show the live result from Mezo's TroveManager. The connect screen and the nav's "Demo loan" link both open this, so anyone can see the product working without a funded wallet.
 
-### 3. After the switch, in the borrower's own wallet
+### 4. After the switch, in the borrower's own wallet
 
 ![Debt Switch after a switch: Your loan is now fixed at 1.00%, the Morpho loan is gone and a 2,000 MUSD loan is open at 1.00% fixed](docs/screenshots/2-switched.jpg)
 
@@ -185,7 +191,7 @@ While a switch runs, a five-step tracker (Approve, Sign, Check, Confirm, Waiting
 
 Before the switch, the same screen shows a preview built entirely from chain reads: a Now and After strip, then what you pay off on Morpho, the Bitcoin that moves, your new loan, the one-time fee, the 200 MUSD reserve, the live swap and the lowest amount you'll accept, what comes back to your wallet, the new collateral ratio and the liquidation price. Marigold notes appear when the 1,800 MUSD minimum sizes the loan up or when the pool's live rate is far from 1:1. If the switch can't go through, a "Why not" box explains it in plain words and replaces the button.
 
-### 4. The switch on the explorer
+### 5. The switch on the explorer
 
 ![Mezo testnet explorer, token transfers for the switch transaction](docs/screenshots/3-explorer-transfers.png)
 
@@ -347,7 +353,7 @@ All four of our contracts are source-verified on the Mezo testnet explorer.
 |---|---|---|
 | 1. Multi-pool routing | Route the MUSD-to-mUSDC leg across several Mezo pools (MUSD/mUSDC, MUSD/mUSDT, MUSD/BTC) so larger loans clear mainnet liquidity | December 2026 |
 | 2. Reverse switch live | `troveToMorpho` is built and fork-tested. Ship it in a redeployed router and in the app, once the testnet market has the liquidity it needs | December 2026 |
-| 3. Mainnet | Already passing on a mainnet fork (`test/MainnetFork.t.sol`). Audit, then deploy against Mezo's own mainnet Morpho BTC/mUSDC market (`0x6f88e79e...33db` on Morpho `0x5658...a311`), with partial switches | Q1 2027 |
+| 3. Mainnet launch | Audit the router, deploy it against Mezo's own Morpho BTC/mUSDC market (`0x6f88e79e...33db` on Morpho `0x5658...a311`) and turn on sending in the app's Mainnet tab, with partial switches. Both switches already pass against these contracts on a mainnet fork. | Q1 2027 |
 
 ## How Debt Switch maps to the judging criteria
 

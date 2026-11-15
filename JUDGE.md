@@ -94,7 +94,7 @@ git clone --recurse-submodules https://github.com/mystiquemide/debt-switch && cd
 forge test
 ```
 
-Expected: `15 tests passed, 0 failed`. The tests fork live Mezo Testnet and use Mezo's deployed MUSD, BorrowerOperations, BorrowerOperationsSignatures, TroveManager and Mezo Pools.
+Expected: `17 tests passed, 0 failed`. 15 fork live Mezo Testnet and use Mezo's deployed MUSD, BorrowerOperations, BorrowerOperationsSignatures, TroveManager and Mezo Pools.
 
 | Test | Proves |
 |---|---|
@@ -110,6 +110,7 @@ Expected: `15 tests passed, 0 failed`. The tests fork live Mezo Testnet and use 
 | `test_TroveToMorpho_RouterHoldsNothing` | Zero balances after the reverse switch |
 | `test_TroveToMorpho_RevertWhen_*` | Reverse switch refuses a wrong caller, slippage and a replayed close signature |
 | `test_ScalesToMorphoUnits`, `testFuzz_ValueMatchesUsd` | Oracle unit maths |
+| `test_Mainnet_MorphoToTrove`, `test_Mainnet_TroveToMorpho` | Both switches on a fork of **Mezo mainnet**, against Mezo's real Morpho BTC/mUSDC market (`0x6f88e79e...33db`), BorrowerOperationsSignatures, TroveManager and MUSD/mUSDC pool. Router ends empty. |
 
 Mezo's native BTC token and BTC/USD oracle can't execute on a fork, so the tests replace those two with test-only stand-ins (`test/standins`). Everything else in the switch runs as deployed. The live transactions in steps 1 to 3 use the real ones.
 

@@ -1,0 +1,23 @@
+{
+  "chainId": 31611,
+  "note": "Morpho Blue, AdaptiveCurveIrm and MezoPriceOracle are our own testnet deployment. Morpho isn't deployed on Mezo testnet.",
+  "debtSwitchRouter": "0x7bb308048C4C511A4102640eDCD8027c22123af7",
+  "morpho": "0x9074F3348585bECdde74fa1c0DE0722043F9f76e",
+  "irm": "0x50E828C8Ca6e0EE5c355179A1a8b20Cce943373d",
+  "oracle": "0x101764Ed730a37f39B80DCe97882bdff76be24c9",
+  "lltv": "860000000000000000",
+  "marketId": "0x19e8401c76f050f4aeb9d145c4f6d2cde9dbba187cd180353018637d261ee541",
+  "mezo": {
+    "btc": "0x7b7C000000000000000000000000000000000000",
+    "musd": "0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503",
+    "musdc": "0xe1a26db653708A2AD8F824E92Db9852410e33A59",
+    "borrowerOperations": "0xCdF7028ceAB81fA0C6971208e83fa7872994beE5",
+    "borrowerOperationsSignatures": "0xD757e3646AF370b15f32EB557F0F8380Df7D639e",
+    "troveManager": "0xE47c80e8c23f6B4A1aE41c34837a0599D5D16bb0",
+    "priceFeed": "0x86bCF0841622a5dAC14A313a15f96A95421b9366",
+    "sortedTroves": "0x722E4D24FD6Ff8b0AC679450F3D91294607268fA",
+    "poolRouter": "0x9a1ff7FE3a0F69959A3fBa1F1e5ee18e1A9CD7E9",
+    "poolFactory": "0x4947243CC818b627A5D06d14C4eCe7398A23Ce1A",
+    "musdMusdcPool": "0x525F049A4494dA0a6c87E3C4df55f9929765Dc3e"
+  }
+}

@@ -390,7 +390,7 @@ docs/         screenshots
 ## Limits
 
 - **Unaudited.** Tests and live testnet runs aren't an audit. Don't use this with real funds.
-- **Not deployed on mainnet.** The live app runs on testnet against our own Morpho Blue instance, since Mezo testnet has no official one. [`test/MainnetFork.t.sol`](test/MainnetFork.t.sol) runs both switches on a fork of Mezo mainnet against Mezo's real Morpho BTC/mUSDC market, BorrowerOperationsSignatures, TroveManager and MUSD/mUSDC pool, and both pass. Going live there needs an audit first.
+- **Mainnet-ready, not deployed yet.** Both switches pass against Mezo mainnet's real Morpho BTC/mUSDC market, BorrowerOperationsSignatures, TroveManager and MUSD/mUSDC pool on a fork ([`test/MainnetFork.t.sol`](test/MainnetFork.t.sol)), with no code changes. The app's Mainnet tab reads real mainnet loans and prices their switch live. Deploying costs about 2.2M gas (under $1), and we're holding it until an audit so nobody risks real money on unaudited code. The live switch runs on testnet against our own Morpho Blue instance, since Mezo testnet has no official one.
 - **The reverse switch isn't live yet.** `troveToMorpho`, moving an MUSD trove back to Morpho, is in the router code and passes 5 fork tests against Mezo's real contracts. The router deployed on testnet predates it. Going live needs a redeploy and about 2,900 mUSDC of idle liquidity in the testnet market, because the flash loan and the new Morpho borrow draw on it in the same transaction.
 - **Whole positions only.** Partial switches come with mainnet (milestone 3).
 - **The 1,800 MUSD floor.** Morpho loans under the floor become an 1,800 MUSD trove, and the extra comes back as mUSDC.

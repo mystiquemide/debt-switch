@@ -72,22 +72,25 @@ await page.addInitScript(() => {
 });
 
 await page.goto(process.env.APP_URL ?? "http://localhost:4173");
-await page.click("#connect");
-await page.waitForSelector(".cards", { timeout: 60000 });
+if (await page.$("#connect")) await page.click("#connect");
+await page.waitForSelector(".loans-pair:not(.loans-reading)", { timeout: 60000 });
 await page.screenshot({ path: `${out}/1-position.png`, fullPage: true });
 console.log((await page.textContent("main")).replace(/\s+/g, " ").slice(0, 1500));
 
 if (action === "switch") {
   await page.click("#switch");
-  await page.waitForSelector(".status.ok, .status.error", { timeout: 240000 });
+  await page.waitForSelector(".done, .state-error", { timeout: 240000 });
   await page.screenshot({ path: `${out}/2-result.png`, fullPage: true });
   console.log("RESULT:", (await page.textContent("main")).replace(/\s+/g, " ").slice(0, 1500));
-  const href = await page.getAttribute(".status a", "href").catch(() => null);
+  const href = await page.getAttribute(".done a", "href").catch(() => null);
   console.log("TX:", href);
 }
 if (action === "revoke") {
+  await page.screenshot({ path: `${out}/2-revoke-card.png`, fullPage: true });
   await page.click("#revoke");
-  await page.waitForFunction(() => !document.querySelector("#revoke") && document.querySelector(".cards"), null, { timeout: 120000 });
+  await page.waitForSelector(".progress", { timeout: 30000 }).catch(() => {});
+  await page.screenshot({ path: `${out}/2b-revoking.png`, fullPage: true });
+  await page.waitForSelector(".done, .state-error", { timeout: 120000 });
   await page.screenshot({ path: `${out}/3-revoked.png`, fullPage: true });
   console.log("REVOKED");
 }

@@ -1,0 +1,185 @@
+.hero {
+  position: relative;
+  margin-top: -76px; /* the sticky nav floats over the sky */
+  padding: 156px var(--gutter) 120px;
+  overflow: hidden;
+  isolation: isolate;
+}
+.hero-sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  z-index: -2;
+}
+.hero::before {
+  /* a light wash keeps ink text readable on the painted sky */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(255, 243, 231, 0.55) 0%, rgba(255, 243, 231, 0.25) 55%, rgba(255, 243, 231, 0) 100%);
+}
+.hero-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 56px;
+  align-items: center;
+}
+.hero-kicker {
+  display: inline-block;
+  margin: 0 0 20px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--white);
+  box-shadow: var(--shadow-nav);
+  font: 500 13px/1.2 var(--sans);
+  letter-spacing: 0.2px;
+}
+.hero h1 {
+  margin: 0;
+  font: 400 66px/1.05 var(--serif);
+  letter-spacing: -2.64px;
+  max-width: 15ch;
+}
+.hero-sub {
+  margin: 24px 0 0;
+  max-width: 34ch;
+  font: 400 20px/1.45 var(--sans);
+  letter-spacing: -0.4px;
+  color: var(--graphite);
+}
+.hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.hero-collage {
+  position: relative;
+  min-height: 460px;
+}
+.hero-shot {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 10px;
+  background: var(--white);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  transform: rotate(2deg);
+}
+.hero-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+}
+.hero-cloud {
+  position: absolute;
+  z-index: 1;
+  object-fit: cover;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+}
+.hero-cloud-a {
+  width: 340px;
+  height: 260px;
+  top: -70px;
+  left: -90px;
+  object-position: 30% 60%;
+}
+.hero-cloud-b {
+  width: 300px;
+  height: 220px;
+  bottom: -80px;
+  right: -60px;
+  object-position: 70% 75%;
+  z-index: 3;
+}
+.hero-note {
+  position: absolute;
+  z-index: 4;
+  left: -28px;
+  bottom: -20px;
+  margin: 0;
+  padding: 14px 18px;
+  max-width: 220px;
+  background: var(--mint);
+  border-radius: 6px;
+  box-shadow: var(--shadow-card);
+  transform: rotate(-4deg);
+  font: 500 15px/1.35 var(--sans);
+  clip-path: polygon(0 4%, 6% 0, 15% 3%, 26% 0, 38% 2%, 52% 0, 63% 3%, 77% 0, 88% 2%, 100% 0, 98% 30%, 100% 62%, 97% 100%, 84% 97%, 70% 100%, 55% 97%, 40% 100%, 27% 96%, 12% 100%, 0 97%, 2% 64%, 0 33%);
+}
+.hero-tear {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 48px;
+}
+
+@media (max-width: 1080px) {
+  .hero h1 {
+    font-size: 56px;
+    letter-spacing: -2.24px;
+  }
+}
+@media (max-width: 900px) {
+  .hero {
+    padding: 132px 20px 96px;
+  }
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 64px;
+  }
+  .hero h1 {
+    font-size: 46px;
+    letter-spacing: -1.38px;
+  }
+  .hero-collage {
+    min-height: 0;
+    max-width: 560px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .hero-cloud-a {
+    width: 240px;
+    height: 180px;
+    top: -60px;
+    left: -50px;
+  }
+  .hero-cloud-b {
+    width: 220px;
+    height: 160px;
+    right: -40px;
+    bottom: -60px;
+  }
+  .hero-note {
+    left: 4px;
+    bottom: -28px;
+  }
+}
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 40px;
+    letter-spacing: -1.2px;
+  }
+  .hero-sub {
+    font-size: 18px;
+  }
+  .hero-ctas .btn {
+    flex: 1 1 100%;
+  }
+  .hero-note {
+    font-size: 14px;
+    max-width: 190px;
+  }
+}

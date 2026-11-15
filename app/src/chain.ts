@@ -230,8 +230,8 @@ async function quote(musdIn: bigint) {
  */
 export async function buildPreview(s: Snapshot): Promise<Preview> {
   const blocks: string[] = [];
-  if (s.morpho.borrowShares === 0n) blocks.push("No Morpho debt to switch.");
-  if (s.trove.status === 1) blocks.push("This wallet already has an open MUSD trove. Mezo allows one per address.");
+  if (s.morpho.borrowShares === 0n) blocks.push("There's no Morpho loan in this wallet to switch.");
+  if (s.trove.status === 1) blocks.push("This wallet already has an MUSD loan, and Mezo allows one per wallet. Close it first, or switch from a different wallet.");
 
   const owed = (s.morpho.debtAssets * (10000n + ACCRUAL_BUFFER_BPS)) / 10000n;
   // Smallest debt whose net (debt + fee) clears the floor.
@@ -247,7 +247,7 @@ export async function buildPreview(s: Snapshot): Promise<Preview> {
     out = await quote(troveDebt);
   }
   const minMusdcOut = (out * (10000n - SLIPPAGE_BPS)) / 10000n;
-  if (minMusdcOut < owed) blocks.push("The MUSD/mUSDC pool can't cover the Morpho debt at this size.");
+  if (minMusdcOut < owed) blocks.push("Mezo Pools doesn't have enough mUSDC right now to repay a loan this size. Try a smaller loan, or try again later.");
 
   const fee = (troveDebt * s.borrowingRate) / WAD;
   const netDebt = troveDebt + fee;
@@ -256,7 +256,7 @@ export async function buildPreview(s: Snapshot): Promise<Preview> {
   const icr = compositeDebt === 0n ? 0n : (coll * s.btcPrice) / compositeDebt;
   const liquidationPrice = coll === 0n ? 0n : (MCR * compositeDebt) / coll;
   if (coll > 0n && icr < MCR) {
-    blocks.push(`The new trove would sit at ${pct(icr)} collateral, below Mezo's 110% minimum.`);
+    blocks.push(`Not enough Bitcoin behind the new loan. It would be backed at ${pct(icr)}, and Mezo needs at least 110%. Add more Bitcoin to your Morpho loan, then come back.`);
   }
   return {
     troveDebt,

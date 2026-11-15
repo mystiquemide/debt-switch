@@ -1,0 +1,63 @@
+.cta {
+  padding: 0 var(--gutter) 120px;
+  overflow-x: clip;
+}
+.cta-wrap {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.cta-band {
+  position: relative;
+  z-index: 1;
+  padding: 72px 40px;
+  text-align: center;
+  background: var(--mint);
+  isolation: isolate;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.06));
+  clip-path: polygon(0% 1.6%, 3.69% 1.46%, 8.94% 1.21%, 12.82% 1.53%, 15.63% 1.33%, 19.91% 2.06%, 22.42% 0.79%, 24.92% 2.11%, 29.4% 0.11%, 34.85% 2.51%, 39.2% 1.6%, 41.92% 0.04%, 45.87% 0.15%, 48.7% 0.63%, 50.99% 1.21%, 54.65% 2.19%, 58.56% 1.66%, 62.41% 1.72%, 66.12% 0.72%, 71.61% 2.59%, 76.58% 1.84%, 79.83% 0.6%, 82.98% 0.18%, 87.71% 1.04%, 92.7% 1.0%, 98.06% 2.2%, 100% 0.55%, 100% 98.4%, 100% 99.6%, 98.94% 97.75%, 94.84% 98.74%, 89.48% 98.82%, 86.05% 98.44%, 83.05% 98.48%, 80.55% 99.81%, 77.37% 99.14%, 72.62% 99.33%, 69.72% 97.43%, 67.19% 98.33%, 62.17% 98.97%, 59.27% 97.7%, 56.07% 97.91%, 50.67% 99.3%, 47.76% 98.91%, 45.18% 98.33%, 42.55% 98.1%, 39.72% 98.84%, 35.67% 99.54%, 30.84% 99.84%, 28.31% 99.36%, 25.72% 98.03%, 20.34% 99.14%, 17.85% 99.3%, 13.08% 98.36%, 10.64% 98.97%, 5.2% 98.78%, 0% 98.6%);
+}
+.cta-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--paper) 40% 50% / 160% auto;
+  mix-blend-mode: multiply;
+  opacity: 0.16;
+}
+.cta h2 {
+  margin: 0;
+  font: 400 56px/1.05 var(--serif);
+  letter-spacing: -2.24px;
+}
+.cta-band p {
+  margin: 16px auto 0;
+  max-width: 40ch;
+  font-size: 18px;
+  color: var(--graphite);
+}
+.cta-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+@media (max-width: 900px) {
+  .cta {
+    padding: 0 16px 72px;
+  }
+  .cta-band {
+    padding: 56px 24px;
+  }
+  .cta h2 {
+    font-size: 40px;
+    letter-spacing: -1.2px;
+  }
+}
+@media (max-width: 480px) {
+  .cta-buttons .btn {
+    flex: 1 1 100%;
+  }
+}

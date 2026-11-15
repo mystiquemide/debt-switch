@@ -12,7 +12,9 @@ import {
   type Hex,
   type WalletClient,
 } from "viem";
-import "./style.css";
+import "./tokens.css";
+import "./app.css";
+import { renderAppNav } from "./nav";
 import {
   ADDR,
   MARKET,
@@ -46,8 +48,10 @@ type Phase =
   | { kind: "reading" }
   | { kind: "read-error"; message: string }
   | { kind: "ready" }
-  | { kind: "busy"; step: string; hash?: Hex }
+  | { kind: "busy"; flow: "switch" | "revoke"; at: number; step: string; hash?: Hex }
+  | { kind: "rejected" }
   | { kind: "reverted"; message: string; hash?: Hex }
+  | { kind: "revoked"; hash: Hex }
   | { kind: "switched"; hash: Hex };
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -58,15 +62,27 @@ let snap: Snapshot | undefined;
 let preview: Preview | undefined;
 /** Read-only view of any address via ?address=0x..., no wallet needed. */
 let readOnly = false;
+/** The wallet the browser already has connected, kept even while viewing another address read-only. */
+let walletAddr: Address | undefined;
 
 // The demo borrower whose Morpho loan was switched live on testnet through this app.
 const DEMO_BORROWER = "0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4" as Address;
 const DEMO_SWITCH_TX = "0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5" as Hex;
-const demoLink = `<p class="small"><a href="?address=${DEMO_BORROWER}">See a real switched loan on testnet, no wallet needed</a></p>`;
+const DEMO_HREF = `/app/?address=${DEMO_BORROWER}`;
+const TESTNET_DAPP = "https://testnet.mezo.org";
+const nav = renderAppNav(document.querySelector<HTMLDivElement>("#nav")!, {
+  demoHref: `/app/?address=${DEMO_BORROWER}`,
+  explorerHref: `https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7`,
+});
+const ext = 'target="_blank" rel="noopener"';
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const short = (a: string) => `${a.slice(0, 6)}...${a.slice(-4)}`;
+
+function isRejection(e: unknown) {
+  return e instanceof BaseError && !!e.walk((x) => x instanceof UserRejectedRequestError);
+}
 
 function decodeError(e: unknown): string {
   if (e instanceof BaseError) {
@@ -104,6 +120,7 @@ async function connect() {
   try {
     wallet = createWalletClient({ chain: mezoTestnet, transport: custom(window.ethereum) });
     [account] = await wallet.requestAddresses();
+    walletAddr = account;
     await checkNetworkAndRead();
   } catch (e) {
     phase = { kind: "read-error", message: decodeError(e) };
@@ -171,7 +188,7 @@ async function runSwitch() {
     }
 
     if (!snap.authorized) {
-      phase = { kind: "busy", step: "Approve Debt Switch on Morpho in your wallet" };
+      phase = { kind: "busy", flow: "switch", at: 0, step: "Approve Debt Switch on Morpho in your wallet" };
       render();
       const h = await wallet.writeContract({
         account,
@@ -181,14 +198,14 @@ async function runSwitch() {
         functionName: "setAuthorization",
         args: [ADDR.router, true],
       });
-      phase = { kind: "busy", step: "Waiting for the Morpho approval to confirm", hash: h };
+      phase = { kind: "busy", flow: "switch", at: 0, step: "Waiting for the Morpho approval to confirm", hash: h };
       render();
       const rc = await publicClient.waitForTransactionReceipt({ hash: h });
       if (rc.status !== "success") throw new Error("The Morpho approval reverted.");
     }
 
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 20 * 60);
-    phase = { kind: "busy", step: "Sign the MUSD trove message in your wallet" };
+    phase = { kind: "busy", flow: "switch", at: 1, step: "Sign the message for your new loan in your wallet" };
     render();
     const signature = await wallet.signTypedData({
       account,
@@ -217,7 +234,7 @@ async function runSwitch() {
       troveSignature: signature,
     };
 
-    phase = { kind: "busy", step: "Simulating the switch" };
+    phase = { kind: "busy", flow: "switch", at: 2, step: "Checking the switch will go through" };
     render();
     const { request } = await publicClient.simulateContract({
       account,
@@ -229,14 +246,14 @@ async function runSwitch() {
 
     // Nested calls (flash loan callback, trove insert) leave estimates tight, so add headroom.
     const gas = await publicClient.estimateContractGas({ ...request, account });
-    phase = { kind: "busy", step: "Confirm the switch in your wallet" };
+    phase = { kind: "busy", flow: "switch", at: 3, step: "Confirm the switch in your wallet" };
     render();
     hash = await wallet.writeContract({ ...request, account, chain: mezoTestnet, gas: (gas * 3n) / 2n });
-    phase = { kind: "busy", step: "Switch submitted, waiting for confirmation", hash };
+    phase = { kind: "busy", flow: "switch", at: 4, step: "Sent. Waiting for Mezo Testnet to confirm", hash };
     render();
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") {
-      phase = { kind: "reverted", message: "The switch reverted on-chain. Your position is unchanged.", hash };
+      phase = { kind: "reverted", message: "The switch didn't go through on Mezo Testnet.", hash };
       render();
       return;
     }
@@ -244,7 +261,7 @@ async function runSwitch() {
     preview = undefined;
     phase = { kind: "switched", hash };
   } catch (e) {
-    phase = { kind: "reverted", message: decodeError(e), hash };
+    phase = isRejection(e) ? { kind: "rejected" } : { kind: "reverted", message: decodeError(e), hash };
     if (account) snap = await readSnapshot(account).catch(() => snap);
   }
   render();
@@ -253,7 +270,7 @@ async function runSwitch() {
 async function revoke() {
   if (!wallet || !account) return;
   try {
-    phase = { kind: "busy", step: "Revoke Debt Switch on Morpho in your wallet" };
+    phase = { kind: "busy", flow: "revoke", at: 0, step: "Confirm in your wallet to turn off access" };
     render();
     const h = await wallet.writeContract({
       account,
@@ -263,12 +280,14 @@ async function revoke() {
       functionName: "setAuthorization",
       args: [ADDR.router, false],
     });
-    phase = { kind: "busy", step: "Waiting for the revoke to confirm", hash: h };
+    phase = { kind: "busy", flow: "revoke", at: 1, step: "Turning off access", hash: h };
     render();
     await publicClient.waitForTransactionReceipt({ hash: h });
-    await refresh();
+    snap = await readSnapshot(account);
+    phase = { kind: "revoked", hash: h };
+    render();
   } catch (e) {
-    phase = { kind: "reverted", message: decodeError(e) };
+    phase = isRejection(e) ? { kind: "rejected" } : { kind: "reverted", message: decodeError(e) };
     render();
   }
 }
@@ -276,84 +295,148 @@ async function revoke() {
 // ---------- rendering ----------
 
 function row(label: string, value: string) {
-  return `<div class="row"><span>${esc(label)}</span><span>${esc(value)}</span></div>`;
+  return `<div class="row"><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`;
+}
+
+function loanCard(tag: string, tagClass: string, title: string, inner: string) {
+  return `<article class="loan"><p class="tag ${tagClass}">${tag}</p><h2>${title}</h2>${inner}</article>`;
 }
 
 function positionCards(s: Snapshot) {
   const morpho =
     s.morpho.borrowShares > 0n || s.morpho.collateral > 0n
-      ? `${row("Debt", `${fmt(s.morpho.debtAssets, 6)} mUSDC`)}${row("Collateral", `${fmt(s.morpho.collateral, 18, 4)} BTC`)}${row(
-          "LTV",
-          s.morpho.collateral === 0n ? "-" : pct((s.morpho.debtAssets * 10n ** 30n) / ((s.morpho.collateral * s.btcPrice) / 10n ** 18n))
-        )}${row("Rate", "Variable (AdaptiveCurveIrm)")}`
-      : `<p class="muted">No Morpho position.</p>`;
+      ? `<dl>${row("You owe", `${fmt(s.morpho.debtAssets, 6)} mUSDC`)}${row("Your Bitcoin", `${fmt(s.morpho.collateral, 18, 4)} BTC`)}${row(
+          "Loan to value",
+          s.morpho.collateral === 0n ? "No collateral" : pct((s.morpho.debtAssets * 10n ** 30n) / ((s.morpho.collateral * s.btcPrice) / 10n ** 18n))
+        )}${row("Rate", "Variable")}</dl>`
+      : `<p class="loan-none">No Morpho loan in this wallet.</p>`;
   const trove =
     s.trove.status === 1
-      ? `${row("Debt", `${fmt(s.trove.debt, 18)} MUSD`)}${row("Collateral", `${fmt(s.trove.coll, 18, 4)} BTC`)}${row(
+      ? `<dl>${row("You owe", `${fmt(s.trove.debt, 18)} MUSD`)}${row("Your Bitcoin", `${fmt(s.trove.coll, 18, 4)} BTC`)}${row(
           "Collateral ratio",
           pct((s.trove.coll * s.btcPrice) / s.trove.debt)
-        )}${row("Rate", `${(s.trove.rateBps / 100).toFixed(2)}% fixed`)}`
-      : `<p class="muted">No MUSD trove.</p>`;
+        )}${row("Rate", `${(s.trove.rateBps / 100).toFixed(2)}% fixed`)}</dl>`
+      : `<p class="loan-none">No MUSD loan in this wallet.</p>`;
   return `
-    <section class="cards">
-      <article class="card"><h3>Morpho mUSDC <small>variable</small></h3>${morpho}</article>
-      <article class="card"><h3>MUSD trove <small>fixed</small></h3>${trove}</article>
+    <section class="loans-pair" aria-label="Your loans">
+      ${loanCard("Variable rate", "tag-var", "Morpho mUSDC", morpho)}
+      ${loanCard("Fixed rate", "tag-fixed", "MUSD trove", trove)}
     </section>
-    <p class="muted small">BTC price ${fmt(s.btcPrice, 18)} USD from Mezo PriceFeed. Wallet holds ${fmt(s.wallet.musdc, 6)} mUSDC and ${fmt(
+    <p class="fineprint">Bitcoin price ${fmt(s.btcPrice, 18)} USD from Mezo's PriceFeed. This wallet holds ${fmt(s.wallet.musdc, 6)} mUSDC and ${fmt(
       s.wallet.musd,
       18
     )} MUSD.</p>`;
 }
 
+function stateCard(opts: { tone?: "error"; title: string; body: string; actions: string }) {
+  return `<section class="state${opts.tone === "error" ? " state-error" : ""}"${opts.tone === "error" ? ' role="alert"' : ""}>
+    <h2>${opts.title}</h2><p>${opts.body}</p><div class="state-actions">${opts.actions}</div></section>`;
+}
+
 function previewCard(s: Snapshot, p: Preview) {
   const blocked = p.blocks.length > 0;
   const busy = phase.kind === "busy";
+  const rate = `${(s.troveRateBps / 100).toFixed(2)}%`;
+  const poolRate = p.troveDebt > 0n ? Number((p.swapOut * 10n ** 12n * 10000n) / p.troveDebt) / 10000 : 1;
+  const sizedUp = s.morpho.debtAssets * 10n ** 12n < s.minNetDebt;
+  const action = readOnly
+    ? `<p class="preview-readonly">This is a read-only view. Connect this wallet to switch it.</p>`
+    : blocked
+      ? ""
+      : `<button class="btn btn-primary preview-go" id="switch" type="button" ${busy ? "disabled" : ""}>${
+          s.authorized ? "Sign and switch" : "Approve, sign and switch"
+        }</button>
+        <p class="preview-small">${s.authorized ? "One signature, then one transaction." : "One approval, one signature, then one transaction."} If any part fails, nothing changes.</p>`;
   return `
-    <section class="card preview">
-      <h3>Switch to fixed MUSD</h3>
-      ${row("Morpho debt repaid", `${fmt(s.morpho.debtAssets, 6)} mUSDC`)}
-      ${row("BTC moved", `${fmt(s.morpho.collateral, 18, 4)} BTC`)}
-      ${row("New trove debt", `${fmt(p.troveDebt, 18)} MUSD`)}
-      ${row("Issuance fee", `${fmt(p.fee, 18)} MUSD`)}
-      ${row("Liquidation reserve", "200.00 MUSD")}
-      ${row("Fixed rate", `${(s.troveRateBps / 100).toFixed(2)}%`)}
-      ${row("Swap", `${fmt(p.troveDebt, 18)} MUSD to ${fmt(p.swapOut, 6)} mUSDC (min ${fmt(p.minMusdcOut, 6)})`)}
-      ${row("Refunded to you", `about ${fmt(p.refund, 6)} mUSDC`)}
-      ${row("New collateral ratio", pct(p.icr))}
-      ${row("Liquidation price", `${fmt(p.liquidationPrice, 18)} USD`)}
+    <section class="preview" aria-labelledby="preview-title">
+      <h2 id="preview-title">${blocked ? "You can't switch this loan yet" : `Switch to a fixed ${rate}`}</h2>
+      <div class="preview-flip" aria-hidden="true">
+        <div><p class="tag tag-var">Now</p><strong>${fmt(s.morpho.debtAssets, 6)} mUSDC</strong><span>Morpho, variable rate</span></div>
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+        <div><p class="tag tag-fixed">After</p><strong>${fmt(p.compositeDebt, 18)} MUSD</strong><span>MUSD loan, ${rate} fixed</span></div>
+      </div>
+      <dl>
+        ${row("You pay off on Morpho", `${fmt(s.morpho.debtAssets, 6)} mUSDC`)}
+        ${row("Your Bitcoin moves", `${fmt(s.morpho.collateral, 18, 4)} BTC`)}
+        ${row("Your new loan", `${fmt(p.troveDebt, 18)} MUSD`)}
+        ${row("One-time fee", `${fmt(p.fee, 18)} MUSD`)}
+        ${row("Liquidation reserve", "200.00 MUSD, held until you close")}
+        ${row("Swap on Mezo Pools", `${fmt(p.troveDebt, 18)} MUSD for ${fmt(p.swapOut, 6)} mUSDC`)}
+        ${row("Lowest you'll accept", `${fmt(p.minMusdcOut, 6)} mUSDC`)}
+        ${row("Back to your wallet", `about ${fmt(p.refund, 6)} mUSDC`)}
+        ${row("Collateral ratio after", pct(p.icr))}
+        ${p.icr >= 11n * 10n ** 17n ? row("Liquidated if Bitcoin falls to", `${fmt(p.liquidationPrice, 18)} USD`) : ""}
+      </dl>
       ${
-        p.netDebt > 0n && s.morpho.debtAssets * 10n ** 12n < s.minNetDebt
-          ? `<p class="note">Mezo troves need at least ${fmt(s.minNetDebt, 18, 0)} MUSD of net debt, so the trove is sized to the minimum and the extra comes back to you as mUSDC.</p>`
+        sizedUp
+          ? `<p class="note">Your Morpho loan is under Mezo's ${fmt(s.minNetDebt, 18, 0)} MUSD minimum, so your new loan opens at that minimum and the extra comes back to your wallet.</p>`
           : ""
       }
       ${
-        p.troveDebt > 0n && (p.swapOut * 10n ** 12n * 100n) / p.troveDebt < 97n
-          ? `<p class="note">The MUSD/mUSDC pool is paying ${(Number((p.swapOut * 10n ** 12n * 10000n) / p.troveDebt) / 10000).toFixed(4)} mUSDC per MUSD right now, so the swap costs more than it would at 1:1. The testnet pool is unbalanced.</p>`
+        poolRate < 0.97
+          ? `<p class="note">Mezo Pools is paying ${poolRate.toFixed(4)} mUSDC per MUSD right now, so the swap costs more than a 1:1 rate would.</p>`
           : ""
       }
-      ${blocked ? `<ul class="blocks">${p.blocks.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : ""}
       ${
-        readOnly
-          ? `<p class="note">Read-only view. Connect this wallet to switch it.</p>`
-          : `<button id="switch" ${blocked || busy ? "disabled" : ""}>${s.authorized ? "Sign and switch" : "Approve, sign and switch"}</button>`
+        blocked
+          ? `<div class="why" role="alert"><h3>Why not</h3><ul>${p.blocks.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></div>`
+          : ""
       }
-      <p class="muted small">One Morpho approval, one signature, one transaction. If any step fails, the whole switch reverts.</p>
+      ${action}
     </section>`;
+}
+
+const SWITCH_STEPS = ["Approve", "Sign", "Check", "Confirm", "Waiting"];
+const tick = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 8.5 3 3 6-7"/></svg>`;
+
+function stepper(at: number) {
+  return `<ol class="stepper">${SWITCH_STEPS.map((label, i) => {
+    const state = i < at ? "done" : i === at ? "now" : "next";
+    return `<li class="step-${state}"${state === "now" ? ' aria-current="step"' : ""}><span class="step-dot">${state === "done" ? tick : i + 1}</span>${label}</li>`;
+  }).join("")}</ol>`;
 }
 
 function status() {
   switch (phase.kind) {
     case "busy":
-      return `<div class="status busy"><span class="spinner"></span>${esc(phase.step)}${
-        phase.hash ? ` <a href="${txUrl(phase.hash)}" target="_blank" rel="noopener">view tx</a>` : ""
-      }</div>`;
+      return `<section class="progress" role="status" aria-live="polite">
+        ${phase.flow === "switch" ? stepper(phase.at) : ""}
+        <p class="progress-now"><span class="spin"></span>${esc(phase.step)}</p>
+        ${phase.hash ? `<a class="progress-tx" href="${txUrl(phase.hash)}" ${ext}>View on the explorer</a>` : ""}
+      </section>`;
+    case "rejected":
+      return stateCard({
+        title: "You cancelled in your wallet",
+        body: "Nothing was sent and nothing changed. You can try again whenever you're ready.",
+        actions: `<button class="btn btn-primary" id="retry" type="button">Try again</button>`,
+      });
     case "reverted":
-      return `<div class="status error" role="alert">${esc(phase.message)}${
-        phase.hash ? ` <a href="${txUrl(phase.hash)}" target="_blank" rel="noopener">view tx</a>` : ""
-      } <button id="retry" class="link">Re-check</button></div>`;
+      return stateCard({
+        tone: "error",
+        title: "That didn't go through",
+        body: `${esc(phase.message)} Your loan hasn't changed.${
+          phase.hash ? ` <a href="${txUrl(phase.hash)}" ${ext}>See the transaction</a>.` : ""
+        }`,
+        actions: `<button class="btn btn-primary" id="retry" type="button">Check again</button>`,
+      });
     case "switched":
-      return `<div class="status ok" role="status">Switched. Your loan is now a fixed-rate MUSD trove.
-        <a href="${txUrl(phase.hash)}" target="_blank" rel="noopener">View transaction</a></div>`;
+      return `<section class="done" role="status">
+        <span class="done-icon">${tick}</span>
+        <div>
+          <h2>Your loan is now fixed at ${snap ? (snap.trove.rateBps / 100).toFixed(2) : ""}%</h2>
+          <p>Your Morpho loan is paid off and your Bitcoin is backing a new MUSD loan in your name.</p>
+        </div>
+        <a class="btn btn-secondary" href="${txUrl(phase.hash)}" ${ext}>View transaction</a>
+      </section>`;
+    case "revoked":
+      return `<section class="done" role="status">
+        <span class="done-icon">${tick}</span>
+        <div>
+          <h2>Access turned off</h2>
+          <p>Debt Switch can no longer act on your Morpho loan.</p>
+        </div>
+        <a class="btn btn-secondary" href="${txUrl(phase.hash)}" ${ext}>View transaction</a>
+      </section>`;
     default:
       return "";
   }
@@ -362,59 +445,109 @@ function status() {
 function body(): string {
   switch (phase.kind) {
     case "no-wallet":
-      return `<section class="card center"><p>No browser wallet found. Install MetaMask or Rabby to use Debt Switch.</p>${demoLink}</section>`;
+      return stateCard({
+        title: "You'll need a browser wallet",
+        body: "Debt Switch works with browser wallets that support Mezo Testnet, like Rabby or MetaMask. You can still see a real switched loan without one.",
+        actions: `<a class="btn btn-primary" href="${DEMO_HREF}">See a real switched loan</a>
+          <a class="btn btn-secondary" href="https://rabby.io" ${ext}>Get Rabby</a>
+          <a class="btn btn-secondary" href="https://metamask.io/download/" ${ext}>Get MetaMask</a>`,
+      });
     case "disconnected":
-      return `<section class="card center"><p>Connect the wallet that holds your Mezo testnet loan.</p><button id="connect">Connect wallet</button>${demoLink}</section>`;
+      return stateCard({
+        title: "Connect your wallet",
+        body: "Use the wallet that holds your loan on Mezo Testnet. Connecting only lets the app read your loans. Nothing moves until you sign.",
+        actions: `<button class="btn btn-primary" id="connect" type="button">Connect wallet</button>
+          <a class="btn btn-secondary" href="${DEMO_HREF}">See a real switched loan</a>`,
+      });
     case "wrong-network":
-      return `<section class="card center"><p>Your wallet is on chain ${phase.chainId}. Debt Switch runs on Mezo Testnet (31611).</p><button id="network">Switch to Mezo Testnet</button></section>`;
+      return stateCard({
+        title: "Switch to Mezo Testnet",
+        body: `Your wallet is on chain ${phase.chainId}. Debt Switch runs on Mezo Testnet, chain 31611. Your wallet will ask you to switch, or to add the network if it doesn't know it yet.`,
+        actions: `<button class="btn btn-primary" id="network" type="button">Switch to Mezo Testnet</button>`,
+      });
     case "reading":
-      return `<section class="card center"><span class="spinner"></span> Reading your positions from Mezo testnet</section>`;
+      return `<section class="loans-pair loans-reading" aria-busy="true" aria-label="Your loans">
+          <article class="loan loan-outline"><p class="tag tag-var">Variable rate</p><h2>Morpho mUSDC</h2></article>
+          <article class="loan loan-outline"><p class="tag tag-fixed">Fixed rate</p><h2>MUSD trove</h2></article>
+        </section>
+        <p class="reading" role="status"><span class="spin"></span>Reading your loans from Mezo Testnet</p>`;
     case "read-error":
-      return `<section class="card center error" role="alert"><p>Couldn't read your positions: ${esc(phase.message)}</p><button id="retry">Retry</button></section>`;
+      return stateCard({
+        tone: "error",
+        title: "Couldn't reach Mezo Testnet",
+        body: "We couldn't read your loans just now. Check your connection, then try again. Your loans aren't affected.",
+        actions: `<button class="btn btn-primary" id="retry" type="button">Try again</button>`,
+      });
   }
   if (!snap) return "";
   const hasMorpho = snap.morpho.borrowShares > 0n;
   const empty =
     !hasMorpho && snap.trove.status !== 1
-      ? `<section class="card center"><p>This wallet has no Morpho mUSDC loan or MUSD trove on Mezo testnet.</p><p><a href="https://mezo.org" target="_blank" rel="noopener">Open a loan on Mezo</a></p></section>`
+      ? stateCard({
+          title: readOnly ? "This wallet has no loan on Mezo yet" : "You don't have a loan on Mezo yet",
+          body: "Debt Switch moves an existing Morpho loan into a fixed-rate MUSD loan. Open a loan on Mezo Testnet first, then come back to switch it.",
+          actions: `<a class="btn btn-primary" href="${TESTNET_DAPP}" ${ext}>Open a loan on Mezo</a>`,
+        })
       : "";
-  const demoNote =
-    readOnly && account?.toLowerCase() === DEMO_BORROWER.toLowerCase()
-      ? `<section class="card demo">
-          <h3>What happened to this loan</h3>
-          <p>This wallet had a 300 mUSDC variable-rate loan on Morpho against 0.04 BTC, and no stablecoins. It switched to a fixed 1.00% MUSD trove through this app in <a href="${txUrl(DEMO_SWITCH_TX)}" target="_blank" rel="noopener">one transaction</a>.</p>
-          <p>Mezo troves need at least 1,800 MUSD of net debt, so the 300 mUSDC loan became a 2,000 MUSD trove (1,800 plus Mezo's 200 MUSD liquidation reserve). The extra came back to the wallet as 1,139.25 mUSDC. The testnet MUSD/mUSDC pool pays about 0.80 mUSDC per MUSD, so the swap cost about 359 mUSDC more than a 1:1 pool would. A loan above 1,800 MUSD is switched at its own size.</p>
+  const isDemo = readOnly && account?.toLowerCase() === DEMO_BORROWER.toLowerCase();
+  const demoNote = isDemo
+    ? `<section class="demo-note">
+        <p class="tag tag-marigold">Real testnet switch</p>
+        <h2>What happened to this loan</h2>
+        <p>This wallet had a 300 mUSDC variable-rate loan on Morpho against 0.04 BTC, and no stablecoins. It switched to an MUSD loan at 1.00% fixed through this app, in <a href="${txUrl(DEMO_SWITCH_TX)}" ${ext}>one transaction</a>.</p>
+        <p>Mezo's fixed-rate loans start at 1,800 MUSD, so the 300 mUSDC loan became a 2,000 MUSD loan (1,800 plus Mezo's 200 MUSD liquidation reserve), and the extra came back to the wallet as 1,139.25 mUSDC. The testnet MUSD/mUSDC pool pays about 0.80 mUSDC per MUSD, so the swap cost about 359 mUSDC more than a 1:1 pool would. A loan above 1,800 MUSD switches at its own size.</p>
+      </section>`
+    : "";
+  const troveOnly =
+    !hasMorpho && snap.trove.status === 1 && !isDemo && phase.kind !== "switched"
+      ? stateCard({
+          title: readOnly ? "This loan is already on a fixed rate" : "Your loan is already on a fixed rate",
+          body: `${readOnly ? "This wallet has" : "You have"} an MUSD loan at ${(snap.trove.rateBps / 100).toFixed(2)}% fixed, so there's nothing to switch. Moving a fixed-rate loan back to Morpho is the next thing being built.`,
+          actions: `<a class="btn btn-primary" href="${addrUrl(account!)}" ${ext}>View on the explorer</a>`,
+        })
+      : "";
+  const revokeRow =
+    !readOnly && snap.authorized && phase.kind !== "busy"
+      ? `<section class="revoke">
+          <div>
+            <h2>Debt Switch can still manage your Morpho loan</h2>
+            <p>It only acts when you send a switch yourself, but you can turn this access off.</p>
+          </div>
+          <button class="btn btn-secondary" id="revoke" type="button">Turn off access</button>
         </section>`
       : "";
-  const revokeRow = !readOnly && snap.authorized
-    ? `<section class="card revoke"><p>Debt Switch is still approved to manage your Morpho position. Nothing uses it between switches, but you can revoke it.</p><button id="revoke" class="secondary" ${
-        phase.kind === "busy" ? "disabled" : ""
-      }>Revoke approval</button></section>`
-    : "";
-  return `${status()}${demoNote}${positionCards(snap)}${empty}${hasMorpho && preview ? previewCard(snap, preview) : ""}${revokeRow}`;
+  return `${status()}${demoNote}${troveOnly}${empty}${positionCards(snap)}${hasMorpho && preview && phase.kind !== "busy" ? previewCard(snap, preview) : ""}${revokeRow}`;
+}
+
+function headerNote() {
+  if (!account || !readOnly) return "";
+  return `<p class="acct"><span class="acct-label">Read-only</span>Viewing <a href="${addrUrl(account)}" ${ext}>${short(account)}</a></p>`;
+}
+
+function renderNavState() {
+  const isDemo = readOnly && account?.toLowerCase() === DEMO_BORROWER.toLowerCase();
+  nav.setCurrent(isDemo ? "demo" : readOnly ? null : "switch");
+  let html = "";
+  const mine = readOnly ? walletAddr : account;
+  if (mine) {
+    html = readOnly
+      ? `<a class="btn btn-secondary nav-addr" href="/app/" title="Back to your own loan">${short(mine)}</a>`
+      : `<a class="btn btn-secondary nav-addr" href="${addrUrl(mine)}" ${ext} title="Connected on Mezo Testnet">${short(mine)}</a>`;
+  } else if (window.ethereum) {
+    html = `<button class="btn btn-primary" type="button" data-connect>Connect wallet</button>`;
+  }
+  nav.setWallet(html).querySelector("[data-connect]")?.addEventListener("click", connect);
 }
 
 function render() {
   app.innerHTML = `
-    <header>
-      <h1>Debt Switch</h1>
-      <p class="tag">Move a Bitcoin loan between Mezo's variable mUSDC and fixed MUSD in one transaction, without repaying first.</p>
-      ${
-        account
-          ? readOnly
-            ? `<p class="acct">Viewing <a href="${addrUrl(account)}" target="_blank" rel="noopener">${short(account)}</a> on Mezo Testnet, read-only. ${
-                window.ethereum ? `<button id="connect" class="link">Connect your own wallet</button>` : ""
-              }</p>`
-            : `<p class="acct">Connected <a href="${addrUrl(account)}" target="_blank" rel="noopener">${short(account)}</a> on Mezo Testnet</p>`
-          : ""
-      }
+    <header class="app-head">
+      <h1>Switch your loan</h1>
+      <p>Move a Morpho loan to a fixed-rate MUSD loan in one transaction.</p>
+      ${headerNote()}
     </header>
-    <main>${body()}</main>
-    <footer class="muted small">
-      Router <a href="${addrUrl(ADDR.router)}" target="_blank" rel="noopener">${short(ADDR.router)}</a>.
-      Morpho Blue here is our own testnet deployment, since Morpho isn't deployed on Mezo testnet.
-      MUSD, BorrowerOperationsSignatures and Mezo Pools are Mezo's own contracts.
-    </footer>`;
+    <main class="app-main">${body()}</main>`;
+  renderNavState();
   document.querySelector("#connect")?.addEventListener("click", connect);
   document.querySelector("#network")?.addEventListener("click", switchNetwork);
   document.querySelector("#retry")?.addEventListener("click", () => (readOnly ? refresh() : wallet ? checkNetworkAndRead() : connect()));
@@ -422,8 +555,10 @@ function render() {
   document.querySelector("#revoke")?.addEventListener("click", revoke);
 }
 
+
 window.ethereum?.on?.("accountsChanged", (accs: Address[]) => {
-  if (readOnly) return;
+  walletAddr = accs[0];
+  if (readOnly) return render();
   account = accs[0];
   if (account) checkNetworkAndRead();
   else {
@@ -436,11 +571,30 @@ window.ethereum?.on?.("chainChanged", () => {
   if (!readOnly) checkNetworkAndRead();
 });
 
-const viewAddress = new URLSearchParams(location.search).get("address");
-if (viewAddress && isAddress(viewAddress)) {
-  readOnly = true;
-  account = getAddress(viewAddress);
-  refresh();
-} else {
-  render();
+async function start() {
+  const viewAddress = new URLSearchParams(location.search).get("address");
+  // eth_accounts never opens a wallet popup: it only reports a connection the user already approved.
+  const existing = window.ethereum
+    ? ((await window.ethereum.request({ method: "eth_accounts" }).catch(() => [])) as Address[])
+    : [];
+  walletAddr = existing[0];
+  if (viewAddress && isAddress(viewAddress)) {
+    readOnly = true;
+    account = getAddress(viewAddress);
+    refresh();
+  } else if (walletAddr) {
+    connect();
+  } else {
+    render();
+  }
 }
+
+if (import.meta.env.DEV) {
+  // Development only: lets the review harness show a state without sending transactions. Not in production builds.
+  (window as unknown as { __showPhase: (p: Phase) => void }).__showPhase = (p) => {
+    phase = p;
+    render();
+  };
+}
+
+start();

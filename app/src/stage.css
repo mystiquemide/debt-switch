@@ -1,0 +1,273 @@
+/* Animated hero shot. A fixed 560 x 404 design, scaled to its column. */
+.ds-stage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+}
+.ds-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  background: var(--canvas);
+  font-family: var(--sans);
+  color: var(--ink);
+  overflow: hidden;
+}
+.ds-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  background: var(--white);
+  border-bottom: 1px solid var(--ash);
+}
+.ds-bar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e4e1dc;
+}
+.ds-bar span {
+  margin-left: 12px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: var(--canvas);
+  font-size: 12px;
+  color: var(--graphite);
+}
+.ds-body {
+  padding: 20px 24px 24px;
+  display: grid;
+  gap: 12px;
+  transition: opacity 0.35s ease;
+}
+.ds-inner[data-phase="fade"] .ds-body {
+  opacity: 0;
+}
+
+/* The top slot holds the page title, and the banner takes its place at the payoff. */
+.ds-top {
+  position: relative;
+  height: 44px;
+}
+.ds-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font: 400 24px/1 var(--serif);
+  letter-spacing: -0.6px;
+  transition: opacity 0.3s ease;
+}
+.ds-inner[data-phase="done"] .ds-title {
+  opacity: 0;
+}
+.ds-banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: var(--mint);
+  font: 400 19px/1 var(--serif);
+  letter-spacing: -0.4px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ds-inner[data-phase="done"] .ds-banner {
+  opacity: 1;
+  transform: none;
+}
+.ds-check {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--white);
+}
+
+.ds-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ds-card {
+  position: relative;
+  padding: 16px;
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+.ds-tag {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.ds-tag-var {
+  background: var(--periwinkle);
+}
+.ds-tag-fixed {
+  background: var(--mint);
+}
+.ds-card h4 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.ds-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-top: 1px solid var(--ash);
+  font-size: 13px;
+  transition: opacity 0.4s ease;
+}
+.ds-row span {
+  color: var(--muted);
+}
+.ds-row b {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.ds-rate {
+  opacity: 0;
+}
+.ds-inner[data-phase="done"] .ds-rate,
+.ds-inner[data-phase="moving"] .ds-rate {
+  opacity: 1;
+}
+.ds-gone {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--canvas);
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.ds-inner[data-phase="done"] .ds-gone {
+  opacity: 1;
+}
+.ds-inner[data-phase="done"] .ds-card:first-child .ds-row {
+  opacity: 0.45;
+}
+
+/* The action area holds either the button or the steps, in the same space. */
+.ds-action {
+  position: relative;
+  height: 52px;
+}
+.ds-btn,
+.ds-steps {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.3s ease, transform 0.12s ease;
+}
+.ds-btn {
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 500;
+}
+.ds-btn.pressed {
+  transform: scale(0.97);
+}
+.ds-inner:not([data-phase="start"]) .ds-btn {
+  opacity: 0;
+}
+.ds-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  opacity: 0;
+}
+.ds-inner[data-phase="steps"] .ds-steps,
+.ds-inner[data-phase="moving"] .ds-steps,
+.ds-inner[data-phase="done"] .ds-steps {
+  opacity: 1;
+  transition-delay: 0.2s;
+}
+.ds-inner:not([data-phase="start"]) .ds-btn {
+  transition-duration: 0.18s;
+}
+.ds-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ds-dot {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ash);
+  background: var(--white);
+  font-size: 11px;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+.ds-steps li.done {
+  color: var(--ink);
+}
+.ds-steps li.done .ds-dot {
+  border-color: var(--mint);
+  background: var(--mint);
+  font-size: 0;
+}
+.ds-steps li.done .ds-dot::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+.ds-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+  transition: transform 0.85s cubic-bezier(0.45, 0, 0.2, 1), opacity 0.25s ease;
+  pointer-events: none;
+}
+.ds-cursor.pressed path {
+  transform: scale(0.92);
+  transform-origin: 2px 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-body,
+  .ds-banner,
+  .ds-row,
+  .ds-btn,
+  .ds-steps,
+  .ds-cursor {
+    transition: none;
+  }
+}

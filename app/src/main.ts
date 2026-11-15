@@ -309,14 +309,14 @@ function positionCards(s: Snapshot) {
           "Loan to value",
           s.morpho.collateral === 0n ? "No collateral" : pct((s.morpho.debtAssets * 10n ** 30n) / ((s.morpho.collateral * s.btcPrice) / 10n ** 18n))
         )}${row("Rate", "Variable")}</dl>`
-      : `<p class="loan-none">No Morpho loan in this wallet.</p>`;
+      : `<p class="loan-none">No Morpho loan in this wallet</p>`;
   const trove =
     s.trove.status === 1
       ? `<dl>${row("You owe", `${fmt(s.trove.debt, 18)} MUSD`)}${row("Your Bitcoin", `${fmt(s.trove.coll, 18, 4)} BTC`)}${row(
           "Collateral ratio",
           pct((s.trove.coll * s.btcPrice) / s.trove.debt)
         )}${row("Rate", `${(s.trove.rateBps / 100).toFixed(2)}% fixed`)}</dl>`
-      : `<p class="loan-none">No MUSD loan in this wallet.</p>`;
+      : `<p class="loan-none">No MUSD loan in this wallet</p>`;
   return `
     <section class="loans-pair" aria-label="Your loans">
       ${loanCard("Variable rate", "tag-var", "Morpho mUSDC", morpho)}
@@ -424,7 +424,7 @@ function status() {
         <span class="done-icon">${tick}</span>
         <div>
           <h2>Your loan is now fixed at ${snap ? (snap.trove.rateBps / 100).toFixed(2) : ""}%</h2>
-          <p>Your Morpho loan is paid off and your Bitcoin is backing a new MUSD loan in your name.</p>
+          <p>Your Morpho loan is paid off and your Bitcoin is backing a new MUSD loan in your name</p>
         </div>
         <a class="btn btn-secondary" href="${txUrl(phase.hash)}" ${ext}>View transaction</a>
       </section>`;
@@ -433,7 +433,7 @@ function status() {
         <span class="done-icon">${tick}</span>
         <div>
           <h2>Access turned off</h2>
-          <p>Debt Switch can no longer act on your Morpho loan.</p>
+          <p>Debt Switch can no longer act on your Morpho loan</p>
         </div>
         <a class="btn btn-secondary" href="${txUrl(phase.hash)}" ${ext}>View transaction</a>
       </section>`;

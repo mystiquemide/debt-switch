@@ -33,9 +33,7 @@
 }
 .footer-cols h2 {
   margin: 0 0 16px;
-  font: 600 13px/1.2 var(--sans);
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+  font: 500 15px/1.2 var(--sans);
   color: #b9b4ad;
 }
 .footer-cols ul {

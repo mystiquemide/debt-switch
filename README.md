@@ -11,7 +11,7 @@
 [![Contracts](https://img.shields.io/badge/contracts-source%20verified-3ccf8e)](#contracts)
 [![License](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 
-**[Live app](https://debtswitch.midelabs.xyz)** · **[See a switched loan, no wallet needed](https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)** · **[Judge guide](JUDGE.md)** · **[Deck](docs/Debt-Switch-deck.pdf)** · **[The switch on the explorer](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5)** · **[Router contract](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract)**
+**[Live app](https://debtswitch.midelabs.xyz)** · **[See a switched loan, no wallet needed](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)** · **[Judge guide](JUDGE.md)** · **[Deck](docs/Debt-Switch-deck.pdf)** · **[The switch on the explorer](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5)** · **[Router contract](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract)**
 
 </div>
 
@@ -79,7 +79,7 @@ Debt Switch moves a whole loan from Morpho mUSDC into an MUSD trove in **one ato
 The full walkthrough with expected results is in **[JUDGE.md](JUDGE.md)**. The short version, about 3 minutes:
 
 1. Open **[the switch transaction](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5?tab=token_transfers)** and read the token transfers top to bottom. That one transaction shows the flash loan, the Morpho repayment, the BTC moving, MUSD minted by Mezo, the swap, the flash loan repaid and the refund.
-2. Open **[the demo borrower in the app](https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)**. No wallet needed. It reads that wallet's Morpho position and trove live from chain and explains the switch. With your own wallet on Mezo Testnet, [the app](https://debtswitch.midelabs.xyz) reads your positions the same way.
+2. Open **[the demo borrower in the app](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4)**. No wallet needed. It reads that wallet's Morpho position and trove live from chain and explains the switch. With your own wallet on Mezo Testnet, [the app](https://debtswitch.midelabs.xyz) reads your positions the same way.
 3. Check the refusals on chain: a [below-floor attempt](https://explorer.test.mezo.org/tx/0xaf9e00b1c6f240869b02960e8a8bb5314a41b35a3aeab391331c7091a7f1e027) and a [wrong-caller attempt](https://explorer.test.mezo.org/tx/0xc3d1628ca463dd13b0e4d293d32fc449d519897ac50ac14b7a0e2a68a88b45c8), both reverted.
 4. Read the [verified router source](https://explorer.test.mezo.org/address/0x7bb308048C4C511A4102640eDCD8027c22123af7?tab=contract), 172 lines.
 
@@ -154,29 +154,31 @@ Full addresses are in [`deployments/31611.json`](deployments/31611.json).
 
 ### 1. Connect
 
-![Debt Switch connect screen](docs/screenshots/1-connect.png)
+![Debt Switch app, Connect your wallet screen, with Connect wallet and See a real switched loan buttons](docs/screenshots/1-connect.jpg)
 
-The app opens on a single action. It works with any injected browser wallet (MetaMask, Rabby). There is no account system and no backend.
+The app at `/app` opens on one action. Its nav holds only app links (Switch, Demo loan, Explorer) and the wallet button. Connecting only lets the app read your loans, and nothing moves until you sign. It works with any injected browser wallet (MetaMask, Rabby), with no account system and no backend. If your wallet is already connected, the app reconnects on load without asking again.
 
 ### 2. Read-only view, no wallet needed
 
-![Debt Switch read-only view of the demo borrower, with an explanation of the switch](docs/screenshots/5-readonly-demo.png)
+![Debt Switch read-only view of the demo borrower: a Read-only label, a marigold card explaining the switch, and the live loan cards](docs/screenshots/5-readonly-demo.jpg)
 
-Add `?address=` and any testnet address to the app URL to see that wallet's live positions without connecting. [This link](https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4) opens the demo borrower. The orange card explains how Mezo's 1,800 MUSD minimum and the unbalanced testnet pool shaped the switch. Below it, the trove card shows the live result from Mezo's TroveManager. The connect screen links here, so anyone can see the product working without a funded wallet.
+Add `?address=` and any testnet address to the app URL to see that wallet's live positions without connecting. [This link](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4) opens the demo borrower. A marigold "Read-only" label marks the view. The marigold card explains how Mezo's 1,800 MUSD minimum and the unbalanced testnet pool shaped the switch. Below it, the loan cards show the live result from Mezo's TroveManager. The connect screen and the nav's "Demo loan" link both open this, so anyone can see the product working without a funded wallet.
 
 ### 3. After the switch, in the borrower's own wallet
 
-![Debt Switch after a switch: Morpho position closed, MUSD trove open at 1.00% fixed, 1,139.24 mUSDC refunded](docs/screenshots/2-switched.png)
+![Debt Switch after a switch: Your loan is now fixed at 1.00%, the Morpho loan is gone and a 2,000 MUSD loan is open at 1.00% fixed](docs/screenshots/2-switched.jpg)
 
-This is the real demo borrower `0x5c64...67B4` right after switching through the app:
+This is the real demo borrower `0x5c64...67B4`, connected, with the success screen from [its switch](https://explorer.test.mezo.org/tx/0x99953623d499e44eb606a686bac43b9bbf7d87cd089c7232609cd5b4fbb68bd5):
 
-- **Green banner:** the transaction confirmed, with a link to it on the explorer.
-- **Morpho mUSDC card:** "No Morpho position." The 300 mUSDC loan is fully repaid and the 0.04 BTC is gone from Morpho.
-- **MUSD trove card:** 2,000.00 MUSD of debt, 0.0400 BTC collateral, a 129.5% collateral ratio and a **1.00% fixed** rate. Every value comes from Mezo's TroveManager.
-- **Summary line:** the BTC price comes live from Mezo's PriceFeed. The wallet holds the 1,139.24 mUSDC refund and 0 MUSD.
-- **Revoke card:** the app reminds the user that the router still holds Morpho permission and offers a one-click revoke. We used it: [revoke tx](https://explorer.test.mezo.org/tx/0xdc4a1b45dfec0e4a24eea00064e255898d9603464c2eed17408b9af736adce2b).
+- **Nav:** the wallet button shows the connected address instead of "Connect wallet".
+- **Mint banner:** "Your loan is now fixed at 1.00%", with a link to the transaction on the explorer.
+- **Morpho mUSDC card:** "No Morpho loan in this wallet." The 300 mUSDC loan is fully repaid and the 0.04 BTC has left Morpho.
+- **MUSD trove card:** 2,000 MUSD owed (a cent more each day as interest accrues), 0.0400 BTC behind it, about a 131% collateral ratio, and a **1.00% fixed** rate. Every value is read live from Mezo's TroveManager.
+- **Summary line:** the Bitcoin price comes live from Mezo's PriceFeed. The wallet holds the 1,139.24 mUSDC refund and 0 MUSD.
 
-Before the switch, the same screen shows a preview card built entirely from chain reads: the Morpho debt to repay, the BTC to move, the new trove debt, the issuance fee, the 200 MUSD reserve, the fixed rate, the live swap quote with your slippage minimum, the expected refund, the new collateral ratio, the liquidation price, a note when the 1,800 MUSD floor sizes the trove, and a note with the pool's live rate when it's far from 1:1. If the switch would fail, the preview lists the reason and the button stays disabled.
+While a switch runs, a five-step tracker (Approve, Sign, Check, Confirm, Waiting) replaces the preview, with a transaction link as soon as there is one. Cancelling in the wallet shows "Nothing was sent and nothing changed", and a failed transaction shows a plain reason and that the loan hasn't changed. After a switch, the app offers to turn off Debt Switch's Morpho access in one click. We used it: [revoke tx](https://explorer.test.mezo.org/tx/0xdc4a1b45dfec0e4a24eea00064e255898d9603464c2eed17408b9af736adce2b).
+
+Before the switch, the same screen shows a preview built entirely from chain reads: a Now and After strip, then what you pay off on Morpho, the Bitcoin that moves, your new loan, the one-time fee, the 200 MUSD reserve, the live swap and the lowest amount you'll accept, what comes back to your wallet, the new collateral ratio and the liquidation price. Marigold notes appear when the 1,800 MUSD minimum sizes the loan up or when the pool's live rate is far from 1:1. If the switch can't go through, a "Why not" box explains it in plain words and replaces the button.
 
 ### 4. The switch on the explorer
 
@@ -196,11 +198,11 @@ The token transfers of [the switch transaction](https://explorer.test.mezo.org/t
 
 ### 5. Wrong network guard
 
-![Debt Switch asking to switch to Mezo Testnet](docs/screenshots/4-wrong-network.png)
+![Debt Switch app asking the wallet to switch to Mezo Testnet, chain 31611](docs/screenshots/4-wrong-network.jpg)
 
 On any chain other than Mezo Testnet, the app blocks every action and offers one button that switches the wallet to chain 31611, adding the network if the wallet doesn't know it.
 
-The app also has dedicated states for no wallet installed, loading, read errors with retry, a wallet with no Mezo loan (with a link to Mezo), in-progress steps with transaction links, and readable revert reasons.
+The app also has dedicated screens for no wallet installed, reading your loans, a connection error with Try again, a wallet with no Mezo loan (linking to Mezo's testnet app), and a wallet that already has a fixed-rate loan.
 
 ## Proof on Mezo Testnet
 
@@ -323,7 +325,7 @@ All four of our contracts are source-verified on the Mezo testnet explorer.
 | Track | Track 1: DeFi (Borrowing, Lending, Looping, and Yield) |
 | Chain | Mezo Testnet (31611) |
 | Project status | Entirely new, built during Wave 2 |
-| Readiness | Testnet deployment, live app at [debtswitch.midelabs.xyz](https://debtswitch.midelabs.xyz), with a [read-only demo view](https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4) |
+| Readiness | Testnet deployment, live app at [debtswitch.midelabs.xyz](https://debtswitch.midelabs.xyz), with a [read-only demo view](https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4) |
 | Live link | https://debtswitch.midelabs.xyz |
 | Repository | https://github.com/mystiquemide/debt-switch |
 | Deck | [docs/Debt-Switch-deck.pdf](docs/Debt-Switch-deck.pdf) |
@@ -386,6 +388,21 @@ Debt Switch was founded and built end to end by **MystiqueMide** for Wave 2 of t
 
 The idea came from looking at Mezo's two borrowing products side by side. Both take the same BTC, but nothing connects them, so the only way across is to repay in full. Morpho's free flash loans and Mezo's signed trove delegation made it possible to bridge them in one transaction without the router ever owning anyone's position.
 
+## Build
+
+* [GitHub](https://github.com/mystiquemide/debt-switch)
+* [Judge guide](https://github.com/mystiquemide/debt-switch/blob/main/JUDGE.md)
+* [Deck](https://github.com/mystiquemide/debt-switch/blob/main/docs/Debt-Switch-deck.pdf)
+
+## Photos on Unsplash
+
+* [Sky by EchoedLightStudio](https://unsplash.com/photos/wispy-clouds-drift-across-a-pale-blue-sky-lIMknT790lk)
+* [Clouds by Linus Belanger](https://unsplash.com/photos/fluffy-white-clouds-drift-against-a-deep-blue-sky-CK3hWcz83ls)
+* [Paper by Plufow Le Studio](https://unsplash.com/photos/an-old-piece-of-paper-with-torn-edges-ICLgWINOp_A)
+* [Coins by Art Rachen](https://unsplash.com/photos/9qk_7C6UlPo)
+
 ## License
 
 [GPL-2.0-or-later](LICENSE). Includes Morpho Blue v1.0.0, which moved from BUSL-1.1 to GPL-2.0-or-later on its change date, and AdaptiveCurveIrm v1.0.0 (MIT).
+
+Built by MystiqueMide. GPL-2.0-or-later.

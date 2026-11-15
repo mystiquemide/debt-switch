@@ -78,7 +78,7 @@
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 16px;
+  border-radius: 14px;
 }
 .hero-cloud {
   position: absolute;
@@ -108,7 +108,7 @@
   left: -28px;
   bottom: -20px;
   margin: 0;
-  padding: 14px 18px;
+  padding: 12px 16px;
   max-width: 220px;
   background: var(--mint);
   border-radius: 6px;

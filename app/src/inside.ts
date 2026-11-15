@@ -5,12 +5,12 @@ const TRANSFERS = `https://explorer.test.mezo.org/tx/${SWITCH_TX}?tab=token_tran
 
 // Each amount is the real token transfer from the testnet switch above.
 const rows = [
-  { title: "Borrow exactly what you owe", body: "Morpho lends the full amount for a moment.", amount: "300.00 mUSDC" },
-  { title: "Pay off your Morpho loan", body: "Cleared to the last cent, interest included.", amount: "300.00 mUSDC" },
-  { title: "Move your Bitcoin", body: "Your collateral leaves Morpho.", amount: "0.04 BTC" },
-  { title: "Open your fixed-rate loan", body: "Mezo opens it in your name, using the message you signed.", amount: "1,798.20 MUSD" },
+  { title: "Borrow exactly what you owe", body: "Morpho lends the full amount for a moment", amount: "300.00 mUSDC" },
+  { title: "Pay off your Morpho loan", body: "Cleared to the last cent, interest included", amount: "300.00 mUSDC" },
+  { title: "Move your Bitcoin", body: "Your collateral leaves Morpho", amount: "0.04 BTC" },
+  { title: "Open your fixed-rate loan", body: "Mezo opens it in your name, using the message you signed", amount: "1,798.20 MUSD" },
   { title: "Swap to repay", body: "The new MUSD becomes mUSDC on Mezo Pools, and the borrowed amount goes back.", amount: "1,439.25 mUSDC" },
-  { title: "Return what's left to you", body: "Debt Switch keeps nothing.", amount: "1,139.25 mUSDC" },
+  { title: "Return what's left to you", body: "Debt Switch keeps nothing", amount: "1,139.25 mUSDC" },
 ];
 
 export function renderInside(root: HTMLElement) {

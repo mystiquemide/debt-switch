@@ -36,8 +36,8 @@
 }
 .loan-tag {
   display: inline-block;
-  margin: 0 0 14px;
-  padding: 5px 12px;
+  margin: 0 0 12px;
+  padding: 4px 12px;
   border-radius: var(--r-pill);
   font: 500 13px/1.2 var(--sans);
 }
@@ -53,7 +53,7 @@
   letter-spacing: -0.6px;
 }
 .loan-rate {
-  margin: 10px 0 18px;
+  margin: 12px 0 20px;
   font: 400 56px/1 var(--serif);
   letter-spacing: -2.24px;
   font-variant-numeric: tabular-nums;

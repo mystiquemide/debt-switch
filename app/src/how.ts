@@ -30,7 +30,7 @@ export function renderHow(root: HTMLElement) {
     <div class="panel panel-periwinkle" style="--paper: url('${PAPER}')">
       <div class="panel-copy">
         <p class="panel-kicker">How it works</p>
-        <h2 id="how-title">Three steps. One transaction.</h2>
+        <h2 id="how-title">Three steps, one transaction</h2>
         <p class="panel-lead">You don't need any stablecoins and you don't repay anything yourself. Debt Switch borrows what's needed for a moment and settles it inside the same transaction.</p>
         <a class="btn btn-primary" href="/app/">Open the app</a>
       </div>

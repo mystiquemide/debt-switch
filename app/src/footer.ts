@@ -47,7 +47,7 @@ export function renderFooter(root: HTMLElement) {
     <div class="footer-inner">
       <div class="footer-brand">
         <a class="footer-mark" href="/"><img src="/logo-light.svg" alt="" width="36" height="36" />Debt Switch</a>
-        <p>Change your Bitcoin loan on Mezo without paying it back first.</p>
+        <p>Change your Bitcoin loan on Mezo without paying it back first</p>
       </div>
       <nav class="footer-cols" aria-label="Footer">
         ${cols

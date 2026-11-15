@@ -36,7 +36,7 @@ The router receives and sends out matching amounts, so it ends with nothing.
 
 ## 2. The state afterwards (1 minute)
 
-In the app, no wallet needed: open **https://debtswitch.midelabs.xyz/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4**. It reads the demo borrower's Morpho position and trove live from chain, and explains how the switch was sized.
+In the app, no wallet needed: open **https://debtswitch.midelabs.xyz/app/?address=0x5c64aCAa8AB6AE0b9386afF5339C23CE54E067B4**. It reads the demo borrower's Morpho position and trove live from chain, and explains how the switch was sized.
 
 With Foundry's `cast`:
 

@@ -52,7 +52,7 @@ export function renderLoans(root: HTMLElement) {
   section.setAttribute("aria-labelledby", "loans-title");
   section.innerHTML = `
     <div class="loans-inner">
-      <h2 id="loans-title">Two Bitcoin loans on Mezo. No way between them.</h2>
+      <h2 id="loans-title">Two Bitcoin loans on Mezo, and no way between them</h2>
       <p class="loans-lead">Mezo lets you borrow against Bitcoin two ways. Both take the same Bitcoin, but they don't talk to each other.</p>
       <div class="loans-grid" aria-live="polite">${loading}</div>
       <p class="loans-source"></p>
@@ -69,7 +69,7 @@ export function renderLoans(root: HTMLElement) {
       const f = await readLoanFacts();
       grid.innerHTML = cards(f);
       const time = f.readAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
-      source.innerHTML = `Live from Mezo mainnet at ${time} UTC, block <a href="https://explorer.mezo.org/block/${f.block}" target="_blank" rel="noopener">${num(Number(f.block))}</a>.`;
+      source.innerHTML = `Live from Mezo mainnet at ${time} UTC, block <a href="https://explorer.mezo.org/block/${f.block}" target="_blank" rel="noopener">${num(Number(f.block))}</a>`;
     } catch (e) {
       grid.innerHTML = failed(e instanceof Error && e.message.length < 120 ? e.message : "Please try again in a moment.");
       grid.querySelector("[data-retry]")?.addEventListener("click", load);

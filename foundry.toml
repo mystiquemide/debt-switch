@@ -17,4 +17,4 @@ evm_version = "shanghai"
 
 [rpc_endpoints]
 mezo_testnet = "https://rpc.test.mezo.org"
-mezo_mainnet = "https://mainnet.mezo.public.validationcloud.io"
+mezo_mainnet = "https://mezo-mainnet.boar.network"

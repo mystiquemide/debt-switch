@@ -5,3 +5,4 @@ broadcast/
 *.key
 node_modules/
 dist/
+.vercel
